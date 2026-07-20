@@ -1156,7 +1156,9 @@ h1, h2, h3, h4, h5, h6 {
 .video-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr); /* 3 Columns on desktop */
-    gap: 24px;
+    gap: 20px;
+    max-width: 720px; /* Constraints the size to make them smaller and neat */
+    margin: 0 auto;
 }
 
 .video-card {
