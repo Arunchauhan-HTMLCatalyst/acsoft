@@ -39,6 +39,7 @@
             <nav class="nav-menu" id="navMenu">
                 <a href="#services" class="nav-link">Services</a>
                 <a href="#products" class="nav-link">Products</a>
+                <a href="#portfolio" class="nav-link">Videos</a>
                 <a href="#why-us" class="nav-link">Why Us</a>
                 <a href="#process" class="nav-link">Process</a>
                 <a href="#pricing" class="nav-link">Pricing</a>
@@ -60,6 +61,7 @@
     <div class="mobile-nav" id="mobileNav">
         <a href="#services" class="mobile-link">Services</a>
         <a href="#products" class="mobile-link">Products</a>
+        <a href="#portfolio" class="mobile-link">Videos</a>
         <a href="#why-us" class="mobile-link">Why Us</a>
         <a href="#process" class="mobile-link">Process</a>
         <a href="#pricing" class="mobile-link">Pricing</a>
@@ -326,9 +328,65 @@
                 </div>
             </div>
         </div>
-    </section>
+     </section>
 
-    <!-- Why Us Section (Value Grid) -->
+     <!-- Video Portfolio Section -->
+     <section id="portfolio" class="portfolio-section section-padding">
+         <div class="container">
+             <div class="section-header text-center">
+                 <span class="badge">Video Portfolio</span>
+                 <h2 class="section-title">Video Editing Projects</h2>
+                 <p class="section-subtitle">High-performance video editing solutions for creators, brands, and startups. Muted previews with manual controls.</p>
+             </div>
+
+             <div class="video-grid">
+                 <!-- Video 1 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/hOZce_qSI7Q?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=hOZce_qSI7Q&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-1" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-1', this)">Unmute</button>
+                     </div>
+                 </div>
+                 <!-- Video 2 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/D-IuHyFkZ6g?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=D-IuHyFkZ6g&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-2" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-2', this)">Unmute</button>
+                     </div>
+                 </div>
+                 <!-- Video 3 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/WxfFA93fLog?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=WxfFA93fLog&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-3" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-3', this)">Unmute</button>
+                     </div>
+                 </div>
+                 <!-- Video 4 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/NZPSJdHGUuQ?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=NZPSJdHGUuQ&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-4" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-4', this)">Unmute</button>
+                     </div>
+                 </div>
+                 <!-- Video 5 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/Qpe5sN7NeSQ?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=Qpe5sN7NeSQ&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-5" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-5', this)">Unmute</button>
+                     </div>
+                 </div>
+                 <!-- Video 6 -->
+                 <div class="video-card reveal">
+                     <div class="video-wrapper-inner">
+                         <iframe src="https://www.youtube.com/embed/kmbDrCRKwEI?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=kmbDrCRKwEI&controls=0&modestbranding=1&rel=0" allow="autoplay; encrypted-media" class="video-frame" id="yt-player-6" frameborder="0"></iframe>
+                         <button class="mute-toggle" onclick="toggleMute('yt-player-6', this)">Unmute</button>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </section>
+
+     <!-- Why Us Section (Value Grid) -->
     <section id="why-us" class="why-us-section section-padding">
         <div class="container">
             <div class="section-header text-center">
@@ -710,6 +768,7 @@
                     <h5>Offerings</h5>
                     <a href="#services">Services</a>
                     <a href="#products">Products</a>
+                    <a href="#portfolio">Video Work</a>
                     <a href="#pricing">Pricing Plans</a>
                 </div>
                 <div class="links-col">

@@ -1147,6 +1147,87 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
+   Video Portfolio Section
+   ========================================================================== */
+.portfolio-section {
+    background: var(--color-bg);
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 Columns on desktop */
+    gap: 24px;
+}
+
+.video-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    transition: var(--transition-smooth);
+}
+
+.video-card:hover {
+    border-color: rgba(50, 204, 202, 0.2);
+    box-shadow: var(--shadow-glow);
+}
+
+.video-wrapper-inner {
+    position: relative;
+    width: 100%;
+    padding-top: 177.77%; /* 9:16 Portrait aspect ratio */
+    background: #000;
+}
+
+.video-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none; /* Disables standard controls */
+}
+
+/* Custom Overlaid Mute / Unmute Button */
+.mute-toggle {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.mute-toggle:hover {
+    background: var(--color-accent);
+    color: #000;
+    border-color: var(--color-accent);
+}
+
+/* Responsive updates for Video Portfolio Grid */
+@media (max-width: 991px) {
+    .video-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+    }
+}
+
+@media (max-width: 600px) {
+    .video-grid {
+        grid-template-columns: 1fr; /* 1 column on mobile */
+    }
+}
+
+/* ==========================================================================
    Contact / Consultation Form
    ========================================================================== */
 .contact-container {

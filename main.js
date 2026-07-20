@@ -233,3 +233,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/* ==========================================================================
+   YouTube Iframe API Player Controls (Mute / Unmute Toggler)
+   ========================================================================== */
+function toggleMute(playerId, button) {
+    const iframe = document.getElementById(playerId);
+    if (!iframe) return;
+    
+    // Post message to YouTube IFrame API to mute/unmute
+    if (button.textContent === "Unmute") {
+        iframe.contentWindow.postMessage(JSON.stringify({
+            "event": "command",
+            "func": "unMute",
+            "args": []
+        }), "*");
+        button.textContent = "Mute";
+        button.style.background = "#32CCC9";
+        button.style.color = "#000";
+        button.style.borderColor = "#32CCC9";
+    } else {
+        iframe.contentWindow.postMessage(JSON.stringify({
+            "event": "command",
+            "func": "mute",
+            "args": []
+        }), "*");
+        button.textContent = "Unmute";
+        button.style.background = "rgba(0, 0, 0, 0.6)";
+        button.style.color = "#fff";
+        button.style.borderColor = "rgba(255, 255, 255, 0.15)";
+    }
+}
