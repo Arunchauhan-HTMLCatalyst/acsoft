@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInfo.textContent = `Selected: ${file.name} (${sizeMB.toFixed(1)} MB)`;
         rawMediaFile = (isAudio || isVideo) ? file : null;
         if (edlFilenameInput) {
-            edlFilenameInput.value = file.name;
+            // Replace subtitle .srt extension with video .mp4 extension for EDL timelines compatibility
+            const edlName = isSrt ? file.name.replace(/\.srt$/i, '.mp4') : file.name;
+            edlFilenameInput.value = edlName;
         }
 
         if (isSrt) {
