@@ -38,34 +38,17 @@
     <!-- Main Content Container -->
     <main class="main-container container">
         
-        <!-- API & Upload Section -->
+        <!-- Upload Section -->
         <section class="setup-section">
-            <div class="setup-grid">
+            <div class="setup-grid-single">
                 
-                <!-- API Key Card -->
-                <div class="setup-card glass">
-                    <div class="card-header">
-                        <div class="step-num">1</div>
-                        <h3>Set Up Groq API Key</h3>
-                    </div>
-                    <p class="card-desc">Clipper uses Groq's high-speed Llama models. Get an API Key from the <a href="https://console.groq.com/keys" target="_blank" class="accent-link">Groq Console</a>.</p>
-                    
-                    <div class="form-group">
-                        <div class="input-wrapper">
-                            <span class="input-icon">🔑</span>
-                            <input type="password" id="apiKeyInput" placeholder="Enter your Groq API Key (gsk_...)" aria-label="Groq API Key">
-                        </div>
-                        <div class="key-status-msg" id="keyStatus">Saved in local browser storage</div>
-                    </div>
-                </div>
-
                 <!-- SRT Upload Card -->
                 <div class="setup-card glass">
                     <div class="card-header">
-                        <div class="step-num">2</div>
+                        <div class="step-num">⚡</div>
                         <h3>Upload Video Subtitles</h3>
                     </div>
-                    <p class="card-desc">Drag and drop your subtitle file below. Supports standard <code>.srt</code> format transcripts.</p>
+                    <p class="card-desc">Drag and drop your subtitle file below. Clipper automatically extracts the best clips and analyzes storyline points using high-speed AI.</p>
                     
                     <div class="upload-zone" id="uploadZone">
                         <div class="upload-icon">📄</div>
