@@ -294,9 +294,10 @@ For each clip, you must:
 3. Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
 4. Identify which cue IDs within that clip range are:
    - "essentialIds": Core message, critical storyline points that must be spoken/kept.
-   - "optionalIds": Only actual stutters, tangents, or fillers to trim (keep this array very small, under 2 items, to prevent disjointed flows).
-5. Provide a 1-line storyline description of the clip's flow.
-6. Provide 1-line reasoning on why this clip will perform well.
+   - "optionalIds": Cues that are redundant stutters, long silences, filler words, or off-topic repetitions that can be safely skipped/trimmed without changing the flow or meaning of the main clip.
+5. Provide a "trimReasons" map where the key is the optional cue ID (as a string) and the value is a very short reason (under 4 words) explaining why it is safe to skip (e.g. "Repetition", "Filler word", "Off-topic tangent", "Silence/pause").
+6. Provide a 1-line storyline description of the clip's flow.
+7. Provide 1-line reasoning on why this clip will perform well.
 
 Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
 
@@ -307,8 +308,12 @@ Return ONLY a valid JSON object matching the schema below. Do not repeat the sub
       "score": 9.2,
       "startId": 12,
       "endId": 25,
-      "essentialIds": [12, 13, 14, 15, 16, 17],
-      "optionalIds": [],
+      "essentialIds": [12, 13, 16, 17],
+      "optionalIds": [14, 15],
+      "trimReasons": {
+        "14": "Filler words",
+        "15": "Repetitive thought"
+      },
       "storyline": "One-line storyline description.",
       "reasoning": "Why this works."
     }
@@ -477,7 +482,11 @@ ${serializedSubs}
                     <div class="lines-container">
                         ${clipLines.map(line => {
                             const isEssential = clip.essentialIds.includes(line.index);
-                            const tag = isEssential ? 'ESSENTIAL' : 'TRIMMED';
+                            let tag = 'ESSENTIAL';
+                            if (!isEssential) {
+                                const reason = clip.trimReasons ? (clip.trimReasons[line.index] || clip.trimReasons[String(line.index)]) : '';
+                                tag = reason ? `SKIP: ${reason.toUpperCase()}` : 'SKIP/TRIM';
+                            }
                             return `
                                 <div class="line-row ${isEssential ? 'is-essential' : ''}">
                                     <span class="line-time">${formatTimeShort(line.start)}</span>

@@ -579,7 +579,7 @@ body {
 
 .line-row {
     display: grid;
-    grid-template-columns: 80px 100px 1fr;
+    grid-template-columns: 80px 160px 1fr;
     align-items: center;
     gap: 16px;
     padding: 10px 12px;
@@ -608,7 +608,7 @@ body {
 
 @media (max-width: 600px) {
     .line-row {
-        grid-template-columns: 70px 90px 1fr;
+        grid-template-columns: 70px 130px 1fr;
         gap: 8px;
         padding: 8px;
         font-size: 0.78rem;
