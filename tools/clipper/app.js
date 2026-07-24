@@ -262,7 +262,7 @@ Analyze the following video transcript cues and identify 10 to 20 highly engagin
 MULTILINGUAL SUPPORT & TRANSLATION RULES:
 - The input transcript might be in English, Hindi (Devanagari or Hinglish), Marathi, Tamil, Punjabi, Telugu, Gujarati, Bengali, or any other major language.
 - You must dynamically support and understand all these languages.
-- Translate the clip "title", "storyline", and "reasoning" fields into the primary language of the transcript content (e.g. if transcript is in Hindi, return titles/storylines in Hindi/Hinglish; if Tamil, return in Tamil; if English, return in English) to match the context perfectly.
+- Crucially, the returned JSON fields "title", "storyline", and "reasoning" MUST ALWAYS be written in clear, fluent, professional English (no mixing or local scripts), regardless of the input transcript language.
 
 CRITICAL RULES FOR CLIPS:
 - Each clip MUST be a minimum of 30 seconds and a maximum of 90 seconds. 
