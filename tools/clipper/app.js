@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const resultsSection = document.getElementById('resultsSection');
     const placeholderState = document.getElementById('placeholderState');
-    const edlFilenameInput = document.getElementById('edlFilenameInput');
 
     let parsedSubtitles = [];
     let detectedClips = [];
     let rawMediaFile = null; // Store media file for local playback slices
     let rawSrtContent = "";  // Store generated SRT content
+    let edlTargetFilename = "source.mp4";
 
     // Helper: Update progress bar status and text
     function updateProgress(percent, statusText) {
@@ -102,11 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fileInfo.textContent = `Selected: ${file.name} (${sizeMB.toFixed(1)} MB)`;
         rawMediaFile = (isAudio || isVideo) ? file : null;
-        if (edlFilenameInput) {
-            // Replace subtitle .srt extension with video .mp4 extension for EDL timelines compatibility
-            const edlName = isSrt ? file.name.replace(/\.srt$/i, '.mp4') : file.name;
-            edlFilenameInput.value = edlName;
-        }
+        edlTargetFilename = isSrt ? file.name.replace(/\.srt$/i, '.mp4') : file.name;
 
         if (isSrt) {
             // Process SRT directly
@@ -888,7 +884,7 @@ ${serializedSubs}
 
         let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
 
-        const fileName = (edlFilenameInput && edlFilenameInput.value.trim()) ? edlFilenameInput.value.trim() : (rawMediaFile ? rawMediaFile.name : "source_video.mp4");
+        const fileName = edlTargetFilename || "source.mp4";
         // Always use 'AX' as the standard tape name to prevent missing media offline warnings in Premiere/Resolve
         const tapeName = "AX";
 
@@ -963,9 +959,7 @@ ${serializedSubs}
         
         fileInput.value = "";
         fileInfo.textContent = "";
-        if (edlFilenameInput) {
-            edlFilenameInput.value = "source.mp4";
-        }
+        edlTargetFilename = "source.mp4";
         
         resultsSection.innerHTML = `
             <div class="placeholder-state" id="placeholderState">
