@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInfo = document.getElementById('fileInfo');
     const loadingSection = document.getElementById('loadingSection');
     const loadingText = document.getElementById('loadingText');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
     const controlBar = document.getElementById('controlBar');
     const statClips = document.getElementById('statClips');
     const statScore = document.getElementById('statScore');
@@ -20,6 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let detectedClips = [];
     let rawMediaFile = null; // Store media file for local playback slices
     let rawSrtContent = "";  // Store generated SRT content
+
+    // Helper: Update progress bar status and text
+    function updateProgress(percent, statusText) {
+        progressContainer.style.display = 'block';
+        progressBar.style.width = `${percent}%`;
+        loadingText.textContent = statusText;
+    }
 
     // Reconstruct Groq API key programmatically to bypass public git secret scanning blocks
     const GROQ_API_KEY = "gsk_" + "342nwlMZ" + "irNETWq6knYj" + "WGdyb3FY2fvnajq3" + "TrybP2d4f5KDBuGz";
@@ -123,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isVideo || isAudio) {
             try {
-                loadingText.textContent = "Extracting & Compressing Audio locally...";
+                updateProgress(10, "Extracting & Compressing Audio locally...");
                 fileToSend = await extractAndDownsampleAudio(file);
                 const compSizeMB = fileToSend.size / (1024 * 1024);
                 console.log(`Audio compressed from ${sizeMB.toFixed(1)}MB to ${compSizeMB.toFixed(1)}MB`);
@@ -135,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        loadingText.textContent = "Transcribing Audio via AI...";
+        updateProgress(30, "Uploading audio to AI... (0%)");
 
         const formData = new FormData();
         formData.append('file', fileToSend, 'audio.wav');
@@ -143,20 +152,43 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('response_format', 'verbose_json');
 
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`
-                },
-                body: formData
+            const jsonData = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'https://api.groq.com/openai/v1/audio/transcriptions');
+                xhr.setRequestHeader('Authorization', `Bearer ${GROQ_API_KEY}`);
+                
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const uploadPercent = Math.round((e.loaded / e.total) * 100);
+                        // Scale upload progress from 30% to 80%
+                        const totalPercent = 30 + Math.round(uploadPercent * 0.5);
+                        updateProgress(totalPercent, `Uploading audio to AI... (${uploadPercent}%)`);
+                    }
+                };
+                
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            resolve(res);
+                        } catch (err) {
+                            reject(new Error("Failed to parse transcription response."));
+                        }
+                    } else {
+                        try {
+                            const errorData = JSON.parse(xhr.responseText);
+                            reject(new Error(errorData.error?.message || `HTTP ${xhr.status} Error`));
+                        } catch {
+                            reject(new Error(`Transcription failed with HTTP ${xhr.status}`));
+                        }
+                    }
+                };
+                
+                xhr.onerror = () => reject(new Error("Network connection error."));
+                xhr.send(formData);
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Groq Transcription Error');
-            }
-
-            const jsonData = await response.json();
+            updateProgress(85, "Transcribing Audio... (Running Whisper AI)");
             const srtContent = convertVerboseJsonToSRT(jsonData);
             rawSrtContent = srtContent;
             parsedSubtitles = parseSRT(srtContent);
@@ -166,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Chain to Llama Clipper Analysis
-            loadingText.textContent = "Analyzing Storyline & Clips...";
             analyzeWithAI();
 
         } catch (error) {
@@ -174,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Transcription failed: ${error.message}`);
             placeholderState.classList.remove('hidden');
             loadingSection.classList.add('hidden');
+            progressContainer.style.display = 'none';
         }
     }
 
@@ -217,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholderState.classList.add('hidden');
         resultsSection.innerHTML = '';
         controlBar.classList.add('hidden');
+        updateProgress(90, "AI is finding viral hooks & cutting segments...");
 
         // Token Optimization: Segment and compress transcripts by assigning simple ID numbers instead of long timestamp structures
         const serializedSubs = parsedSubtitles.map(s => `ID:${s.index} | ${s.start.split(',')[0]} | ${s.text}`).join('\n');
@@ -311,6 +344,7 @@ ${serializedSubs}
             placeholderState.classList.remove('hidden');
         } finally {
             loadingSection.classList.add('hidden');
+            progressContainer.style.display = 'none';
         }
     }
 

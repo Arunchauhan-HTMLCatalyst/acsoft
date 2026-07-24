@@ -65,6 +65,9 @@
         <section class="loading-section glass hidden" id="loadingSection">
             <div class="spinner"></div>
             <h3 id="loadingText">Processing Subtitles...</h3>
+            <div class="progress-container" id="progressContainer" style="width: 100%; max-width: 320px; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 10px; margin: 16px auto; overflow: hidden; display: none; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div class="progress-bar" id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #32ccca, #00f2fe); border-radius: 10px; transition: width 0.2s ease;"></div>
+            </div>
             <p>AI is scanning transcript topics, hooks, and semantic clusters to build storyline guides.</p>
         </section>
 
@@ -115,6 +118,6 @@
     </footer>
 
     <!-- App Script -->
-    <script src="app.js?v=1.16"></script>
+    <script src="app.js?v=1.17"></script>
 </body>
 </html>
