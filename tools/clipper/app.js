@@ -150,13 +150,56 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!response.ok) throw new Error("Failed to load YouTube page.");
         
         const html = await response.text();
-        const jsonMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-        if (!jsonMatch) {
-            const jsonMatch2 = html.match(/ytInitialPlayerResponse\s*=\s*({.+?})\s*<\/script>/);
-            if (!jsonMatch2) throw new Error("This YouTube video page layout is not supported or subtitles are restricted.");
-            return parseCaptions(JSON.parse(jsonMatch2[1]));
+        const jsonStr = extractJsonFromString(html, 'ytInitialPlayerResponse');
+        
+        if (!jsonStr) {
+            throw new Error("This YouTube video page layout is not supported or subtitles are restricted.");
         }
-        return parseCaptions(JSON.parse(jsonMatch[1]));
+        
+        return parseCaptions(JSON.parse(jsonStr));
+    }
+
+    function extractJsonFromString(str, startKeyword) {
+        const index = str.indexOf(startKeyword);
+        if (index === -1) return null;
+        
+        const startIndex = str.indexOf('{', index);
+        if (startIndex === -1) return null;
+        
+        let braceCount = 0;
+        let inString = false;
+        let escape = false;
+        
+        for (let i = startIndex; i < str.length; i++) {
+            const char = str[i];
+            
+            if (escape) {
+                escape = false;
+                continue;
+            }
+            
+            if (char === '\\') {
+                escape = true;
+                continue;
+            }
+            
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+            
+            if (!inString) {
+                if (char === '{') {
+                    braceCount++;
+                } else if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                        return str.substring(startIndex, i + 1);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     function parseCaptions(playerResponse) {
