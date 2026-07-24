@@ -272,8 +272,8 @@ MULTILINGUAL SUPPORT & TRANSLATION RULES:
 - Crucially, the returned JSON fields "title", "storyline", and "reasoning" MUST ALWAYS be written in clear, fluent, professional English (no mixing or local scripts), regardless of the input transcript language.
 
 CRITICAL RULES FOR CLIPS:
-- Each clip MUST be a minimum of 30 seconds and a maximum of 90 seconds. 
-- You can make a clip slightly shorter than 30 seconds ONLY if it is necessary to keep the storyline cohesive and clean, but never exceed 90 seconds.
+- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds!
+- Do not skip or mark lines as optional in the middle of a sentence or a cohesive paragraph. Keep the "optionalIds" array extremely minimal (typically 0 to 2 cues per clip max). Mark only actual silence, repetitive stutters, or redundant filler words as optional, ensuring the clip flows continuously without confusing jumps.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
 - HOOK-CENTRIC START CUE REQUIREMENT: Every clip's start cue MUST represent the beginning of a clean, coherent sentence, a new thought, or a key question.
 - NEVER start a clip on a mid-sentence conjunction (such as "and", "but", "so", "because", "then", "like"), a random word, or inside a broken phrase. Adjust the starting cue ID forward or backward to ensure the first spoken line functions as a clean, engaging hook.
@@ -284,7 +284,7 @@ For each clip, you must:
 3. Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
 4. Identify which cue IDs within that clip range are:
    - "essentialIds": Core message, critical storyline points that must be spoken/kept.
-   - "optionalIds": Side-talk, repetition, filler, or tangent that can be ignored or trimmed while keeping the clip's point perfectly clear.
+   - "optionalIds": Only actual stutters, tangents, or fillers to trim (keep this array very small, under 2 items, to prevent disjointed flows).
 5. Provide a 1-line storyline description of the clip's flow.
 6. Provide 1-line reasoning on why this clip will perform well.
 
@@ -297,8 +297,8 @@ Return ONLY a valid JSON object matching the schema below. Do not repeat the sub
       "score": 9.2,
       "startId": 12,
       "endId": 25,
-      "essentialIds": [12, 13, 14, 16, 17],
-      "optionalIds": [15],
+      "essentialIds": [12, 13, 14, 15, 16, 17],
+      "optionalIds": [],
       "storyline": "One-line storyline description.",
       "reasoning": "Why this works."
     }
