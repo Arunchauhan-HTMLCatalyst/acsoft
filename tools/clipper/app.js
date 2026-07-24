@@ -104,11 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsText(file);
         } else {
-            // If the media file is larger than 25MB, remind about the Groq Whisper 25MB limit (but try sending it anyway)
-            if (sizeMB > 25) {
-                alert("Note: Groq Whisper API has a strict 25MB file size upload limit. We will attempt transcription, but it may fail. For large files, please compress them or upload an .srt directly.");
-            }
-            // Transcribe media file first via Groq Whisper
+            // Transcribe media file first via Groq Whisper (compressor handles large files automatically)
             transcribeAndAnalyze(file);
         }
     }
