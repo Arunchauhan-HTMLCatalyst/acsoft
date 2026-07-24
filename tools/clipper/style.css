@@ -816,59 +816,6 @@ body {
 
 
 
-.youtube-divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 20px 0;
-    color: var(--color-text-muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-}
 
-.youtube-divider::before,
-.youtube-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.youtube-divider span {
-    padding: 0 12px;
-}
-
-.youtube-zone {
-    display: flex;
-    gap: 12px;
-}
-
-.yt-input {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--border-radius-sm);
-    color: #fff;
-    font-size: 0.9rem;
-    padding: 12px 16px;
-    outline: none;
-    transition: var(--transition-smooth);
-}
-
-.yt-input:focus {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 10px rgba(50, 204, 202, 0.15);
-}
-
-#ytAnalyzeBtn {
-    white-space: nowrap;
-    padding: 12px 24px;
-}
-
-/* Response layout adjustments */
-@media (max-width: 600px) {
-    .youtube-zone {
-        flex-direction: column;
-    }
-}
 
 

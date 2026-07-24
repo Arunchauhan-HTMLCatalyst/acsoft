@@ -19,14 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const resultsSection = document.getElementById('resultsSection');
     const placeholderState = document.getElementById('placeholderState');
-    const ytUrlInput = document.getElementById('ytUrlInput');
-    const ytAnalyzeBtn = document.getElementById('ytAnalyzeBtn');
 
     let parsedSubtitles = [];
     let detectedClips = [];
     let rawMediaFile = null; // Store media file for local playback slices
     let rawSrtContent = "";  // Store generated SRT content
-    let youtubeVideoId = ""; // Store YouTube ID if processing a YouTube link
 
     // Helper: Update progress bar status and text
     function updateProgress(percent, statusText) {
@@ -76,157 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // YouTube Link Handler
-    ytAnalyzeBtn.addEventListener('click', async () => {
-        const url = ytUrlInput.value.trim();
-        if (!url) {
-            alert("Please paste a valid YouTube URL.");
-            return;
-        }
-        
-        const videoId = extractYouTubeId(url);
-        if (!videoId) {
-            alert("Could not extract YouTube Video ID. Please check the URL format.");
-            return;
-        }
-        
-        // Reset state
-        parsedSubtitles = [];
-        detectedClips = [];
-        rawMediaFile = null;
-        rawSrtContent = "";
-        youtubeVideoId = videoId;
-        
-        setupSection.classList.add('hidden');
-        loadingSection.classList.remove('hidden');
-        placeholderState.classList.add('hidden');
-        resultsSection.innerHTML = '';
-        controlBar.classList.add('hidden');
-        
-        updateProgress(20, "Fetching YouTube video details...");
-        
-        try {
-            const { baseUrl, proxy } = await getYouTubeSubtitles(videoId);
-            updateProgress(50, "Fetching subtitle tracks...");
-            
-            const fetchSubUrl = proxy.includes('?') ? (proxy + encodeURIComponent(baseUrl + '&fmt=srt')) : (proxy + baseUrl + '&fmt=srt');
-            const srtRes = await fetch(fetchSubUrl);
-            if (!srtRes.ok) throw new Error("Failed to fetch YouTube subtitles track.");
-            
-            const srtContent = await srtRes.text();
-            if (!srtContent.trim()) throw new Error("Fetched subtitles content is empty.");
-            
-            rawSrtContent = srtContent;
-            parsedSubtitles = parseSRT(srtContent);
-            
-            if (parsedSubtitles.length === 0) {
-                throw new Error("Parsed subtitles list is empty.");
-            }
-            
-            updateProgress(80, "Analyzing segments with Llama AI...");
-            analyzeWithAI();
-        } catch (err) {
-            console.error("YouTube analysis failed:", err);
-            alert(`YouTube Analysis Failed: ${err.message}`);
-            
-            youtubeVideoId = "";
-            placeholderState.classList.remove('hidden');
-            loadingSection.classList.add('hidden');
-            setupSection.classList.remove('hidden');
-        }
-    });
 
-    function extractYouTubeId(url) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    }
-
-    async function getYouTubeSubtitles(videoId) {
-        const targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        const proxies = [
-            'https://corsproxy.io/?',
-            'https://api.allorigins.win/raw?url=',
-            'https://api.codetabs.com/v1/proxy?quest='
-        ];
-        
-        let lastError = null;
-        for (const proxy of proxies) {
-            try {
-                const fetchUrl = proxy.includes('?') ? (proxy + encodeURIComponent(targetUrl)) : (proxy + targetUrl);
-                const response = await fetch(fetchUrl);
-                if (!response.ok) continue;
-                
-                const html = await response.text();
-                const jsonStr = extractJsonFromString(html, 'ytInitialPlayerResponse');
-                if (!jsonStr) continue;
-                
-                const baseUrl = parseCaptions(JSON.parse(jsonStr));
-                return { baseUrl, proxy };
-            } catch (err) {
-                lastError = err;
-            }
-        }
-        
-        throw new Error(lastError ? lastError.message : "All proxy connections to YouTube failed. Subtitles are restricted, pages are blocked, or captions are disabled.");
-    }
-
-    function extractJsonFromString(str, startKeyword) {
-        const index = str.indexOf(startKeyword);
-        if (index === -1) return null;
-        
-        const startIndex = str.indexOf('{', index);
-        if (startIndex === -1) return null;
-        
-        let braceCount = 0;
-        let inString = false;
-        let escape = false;
-        
-        for (let i = startIndex; i < str.length; i++) {
-            const char = str[i];
-            
-            if (escape) {
-                escape = false;
-                continue;
-            }
-            
-            if (char === '\\') {
-                escape = true;
-                continue;
-            }
-            
-            if (char === '"') {
-                inString = !inString;
-                continue;
-            }
-            
-            if (!inString) {
-                if (char === '{') {
-                    braceCount++;
-                } else if (char === '}') {
-                    braceCount--;
-                    if (braceCount === 0) {
-                        return str.substring(startIndex, i + 1);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    function parseCaptions(playerResponse) {
-        const captions = playerResponse.captions?.playerCaptionsTracklistRenderer;
-        if (!captions || !captions.captionTracks || captions.captionTracks.length === 0) {
-            throw new Error("This YouTube video does not have any captions/subtitles track enabled.");
-        }
-        
-        // Prioritize English, then Hindi, then first available
-        let track = captions.captionTracks.find(t => t.languageCode === 'en');
-        if (!track) track = captions.captionTracks.find(t => t.languageCode === 'hi');
-        if (!track) track = captions.captionTracks[0];
-        
-        return track.baseUrl;
-    }
 
     function handleFile(file) {
         const name = file.name.toLowerCase();
@@ -1098,11 +945,9 @@ ${serializedSubs}
         detectedClips = [];
         rawMediaFile = null;
         rawSrtContent = "";
-        youtubeVideoId = "";
         
         fileInput.value = "";
         fileInfo.textContent = "";
-        ytUrlInput.value = "";
         
         resultsSection.innerHTML = `
             <div class="placeholder-state" id="placeholderState">
