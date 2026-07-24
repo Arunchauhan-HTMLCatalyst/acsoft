@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('model', 'whisper-large-v3-turbo');
-        formData.append('response_format', 'srt');
+        formData.append('response_format', 'verbose_json');
 
         try {
             const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -131,7 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error?.message || 'Groq Transcription Error');
             }
 
-            const srtContent = await response.text();
+            const jsonData = await response.json();
+            const srtContent = convertVerboseJsonToSRT(jsonData);
             parsedSubtitles = parseSRT(srtContent);
             
             if (parsedSubtitles.length === 0) {
@@ -396,6 +397,31 @@ ${serializedSubs}
         const m = parseInt(timeParts[1], 10) * 60000;
         const s = parseInt(timeParts[2], 10) * 1000;
         return h + m + s;
+    }
+
+    // Helper: Convert Groq Whisper verbose_json to standard SRT subtitle string
+    function convertVerboseJsonToSRT(data) {
+        if (!data.segments || data.segments.length === 0) return '';
+        
+        return data.segments.map((segment, index) => {
+            const start = formatSecondsToSRTTime(segment.start);
+            const end = formatSecondsToSRTTime(segment.end);
+            return `${index + 1}\n${start} --> ${end}\n${(segment.text || '').trim()}`;
+        }).join('\n\n');
+    }
+
+    function formatSecondsToSRTTime(seconds) {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 1000);
+
+        const hrsStr = String(hrs).padStart(2, '0');
+        const minsStr = String(mins).padStart(2, '0');
+        const secsStr = String(secs).padStart(2, '0');
+        const msStr = String(ms).padStart(3, '0');
+
+        return `${hrsStr}:${minsStr}:${secsStr},${msStr}`;
     }
 
     // Export CSV Handler
