@@ -1,0 +1,371 @@
+/* ==========================================================================
+   acSoft Clipper Core Logic
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const keyStatus = document.getElementById('keyStatus');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const loadingSection = document.getElementById('loadingSection');
+    const loadingText = document.getElementById('loadingText');
+    const controlBar = document.getElementById('controlBar');
+    const statClips = document.getElementById('statClips');
+    const statScore = document.getElementById('statScore');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const resultsSection = document.getElementById('resultsSection');
+    const placeholderState = document.getElementById('placeholderState');
+
+    let parsedSubtitles = [];
+    let detectedClips = [];
+
+    // Load saved API Key
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) {
+        apiKeyInput.value = savedKey;
+        keyStatus.textContent = "API Key loaded from local storage";
+        keyStatus.classList.add('active');
+    }
+
+    // Save API Key on input
+    apiKeyInput.addEventListener('input', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('gemini_api_key', key);
+            keyStatus.textContent = "API Key saved";
+            keyStatus.classList.add('active');
+        } else {
+            localStorage.removeItem('gemini_api_key');
+            keyStatus.textContent = "Removed from storage";
+            keyStatus.classList.remove('active');
+        }
+    });
+
+    // File Upload Handlers
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        if (!file.name.endsWith('.srt')) {
+            alert('Please upload a valid .srt file');
+            return;
+        }
+
+        fileInfo.textContent = `Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+            parsedSubtitles = parseSRT(content);
+            if (parsedSubtitles.length === 0) {
+                alert("Failed to parse SRT file. Please verify its format.");
+                return;
+            }
+            // Trigger AI analysis
+            analyzeWithAI();
+        };
+        reader.readAsText(file);
+    }
+
+    // SRT Parser Logic
+    function parseSRT(data) {
+        const items = [];
+        // Normalize line endings
+        const cleaned = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const blocks = cleaned.split('\n\n');
+
+        blocks.forEach(block => {
+            const lines = block.trim().split('\n');
+            if (lines.length >= 3) {
+                const index = parseInt(lines[0], 10);
+                const timeLine = lines[1];
+                const text = lines.slice(2).join(' ');
+
+                if (timeLine && timeLine.includes('-->')) {
+                    const parts = timeLine.split('-->');
+                    const start = parts[0].trim();
+                    const end = parts[1].trim();
+
+                    items.push({
+                        index,
+                        start,
+                        end,
+                        text: text.replace(/<[^>]*>/g, '') // remove HTML tags if any
+                    });
+                }
+            }
+        });
+        return items;
+    }
+
+    // AI Analysis via Gemini API
+    async function analyzeWithAI() {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            alert('Please set your Gemini API Key in Step 1 first.');
+            return;
+        }
+
+        // Show loading state
+        loadingSection.classList.remove('hidden');
+        placeholderState.classList.add('hidden');
+        resultsSection.innerHTML = '';
+        controlBar.classList.add('hidden');
+
+        // Segment subtitles into smaller chunks if transcript is huge,
+        // but for general clips analysis, we send a compressed list of cues.
+        const serializedSubs = parsedSubtitles.map(s => `[${s.start} -> ${s.end}] ${s.text}`).join('\n');
+
+        // Instruct Gemini 1.5 Flash to return JSON listing the clips
+        const prompt = `
+You are an expert AI video clipping assistant for short-form video editors (Reels, TikTok, Shorts).
+Analyze the following video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
+Each clip should be around 30 to 90 seconds in duration.
+
+For each clip, you must:
+1. Provide a catchy, viral-style Title.
+2. Assign a Virality/Engagement Score from 1.0 to 10.0.
+3. Define the precise start timestamp and end timestamp of the clip based on the transcript cues (choose cues that naturally form a complete clip).
+4. Extract all subtitle lines within that clip window.
+5. Analyze each line within the clip and tag it as either:
+   - "ESSENTIAL": Core message, critical storyline point that must be spoken/kept.
+   - "OPTIONAL": Side-talk, repetition, filler, or tangent that can be ignored or trimmed while keeping the clip's point perfectly clear.
+6. Provide a 1-line storyline description of the clip's flow.
+7. Provide 1-line reasoning on why this clip will perform well.
+
+Return ONLY a valid JSON object matching the schema below. No markdown formatting blocks, no extra text, just the raw JSON:
+
+{
+  "clips": [
+    {
+      "title": "Clip Title Here",
+      "score": 9.2,
+      "startTime": "00:01:59,000",
+      "endTime": "00:02:35,000",
+      "storyline": "One-line storyline description.",
+      "reasoning": "Why this works.",
+      "lines": [
+        {
+          "time": "00:01:59,000",
+          "text": "The subtitle line text",
+          "tag": "ESSENTIAL"
+        },
+        {
+          "time": "00:02:18,000",
+          "text": "An optional side sentence",
+          "tag": "OPTIONAL"
+        }
+      ]
+    }
+  ]
+}
+
+TRANSCRIPT CUES:
+${serializedSubs}
+`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Gemini API Error');
+            }
+
+            const data = await response.json();
+            const textResponse = data.candidates[0].content.parts[0].text;
+            
+            // Parse response json
+            const result = JSON.parse(textResponse);
+            detectedClips = result.clips || [];
+
+            if (detectedClips.length === 0) {
+                throw new Error("No clips returned from AI analyzer. Check the transcript content.");
+            }
+
+            renderClips();
+
+        } catch (error) {
+            console.error(error);
+            alert(`Analysis failed: ${error.message}`);
+            placeholderState.classList.remove('hidden');
+        } finally {
+            loadingSection.classList.add('hidden');
+        }
+    }
+
+    // Render Clips layout
+    function renderClips() {
+        resultsSection.innerHTML = '';
+        
+        if (detectedClips.length === 0) {
+            placeholderState.classList.remove('hidden');
+            controlBar.classList.add('hidden');
+            return;
+        }
+
+        // Show controls & updates stats
+        controlBar.classList.remove('hidden');
+        statClips.textContent = detectedClips.length;
+
+        const totalScore = detectedClips.reduce((sum, c) => sum + parseFloat(c.score), 0);
+        statScore.textContent = (totalScore / detectedClips.length).toFixed(1);
+
+        detectedClips.forEach((clip, index) => {
+            const card = document.createElement('div');
+            card.className = 'clip-card glass';
+            card.style.animationDelay = `${index * 0.1}s`;
+
+            const scoreClass = clip.score >= 8.0 ? 'high' : 'mid';
+
+            // Calculate duration
+            const durationText = calculateDuration(clip.startTime, clip.endTime);
+
+            // Construct lines HTML
+            let linesHtml = '';
+            if (clip.lines && clip.lines.length > 0) {
+                linesHtml = `
+                    <div class="lines-container">
+                        ${clip.lines.map(line => `
+                            <div class="line-row ${line.tag === 'ESSENTIAL' ? 'is-essential' : ''}">
+                                <span class="line-time">${formatTimeShort(line.time)}</span>
+                                <span class="line-badge ${line.tag === 'ESSENTIAL' ? 'essential' : 'optional'}">${line.tag}</span>
+                                <span class="line-text">${line.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="clip-header">
+                    <div class="clip-title-area">
+                        <h4>Clip #${index + 1}: ${clip.title}</h4>
+                        <div class="clip-meta">
+                            <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${clip.startTime}'); alert('Copied start time!')">
+                                ⏱️ ${clip.startTime.split(',')[0]} → ${clip.endTime.split(',')[0]}
+                            </span>
+                            <span class="clip-duration">${durationText}</span>
+                        </div>
+                    </div>
+                    <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
+                </div>
+
+                ${linesHtml}
+
+                <div class="analysis-box">
+                    <div class="storyline-info">
+                        <strong>Storyline Flow:</strong>
+                        <p>${clip.storyline}</p>
+                    </div>
+                    <div class="reasoning-info">
+                        <strong>Why it works:</strong>
+                        <p>${clip.reasoning}</p>
+                    </div>
+                </div>
+            `;
+            resultsSection.appendChild(card);
+        });
+    }
+
+    // Helper: format time for readability
+    function formatTimeShort(timeStr) {
+        if (!timeStr) return '';
+        // 00:01:59,000 -> 01:59
+        const parts = timeStr.split(',');
+        const time = parts[0].split(':');
+        const hr = parseInt(time[0], 10);
+        const min = time[1];
+        const sec = time[2];
+        return hr > 0 ? `${hr}:${min}:${sec}` : `${min}:${sec}`;
+    }
+
+    // Helper: calculate duration
+    function calculateDuration(start, end) {
+        try {
+            const s = parseTimeToMs(start);
+            const e = parseTimeToMs(end);
+            const diffSec = Math.round((e - s) / 1000);
+            return `${diffSec} seconds`;
+        } catch {
+            return '';
+        }
+    }
+
+    function parseTimeToMs(timeStr) {
+        const parts = timeStr.split(',');
+        const ms = parseInt(parts[1] || '0', 10);
+        const timeParts = parts[0].split(':');
+        const h = parseInt(timeParts[0], 10) * 3600000;
+        const m = parseInt(timeParts[1], 10) * 60000;
+        const s = parseInt(timeParts[2], 10) * 1000;
+        return h + m + s;
+    }
+
+    // Export CSV Handler
+    exportCsvBtn.addEventListener('click', () => {
+        if (detectedClips.length === 0) return;
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Clip Number,Title,Score,Start Time,End Time,Storyline,Reasoning\n";
+
+        detectedClips.forEach((clip, index) => {
+            const row = [
+                index + 1,
+                `"${clip.title.replace(/"/g, '""')}"`,
+                clip.score,
+                clip.startTime,
+                clip.endTime,
+                `"${clip.storyline.replace(/"/g, '""')}"`,
+                `"${clip.reasoning.replace(/"/g, '""')}"`
+            ].join(",");
+            csvContent += row + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "acsoft_clipper_output.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+});

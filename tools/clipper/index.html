@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipper | AI Short-Form Content Finder | acSoft.</title>
+    <meta name="description" content="Extract the best 10-20 viral short-form content clips from any long-form video using Gemini AI. Upload SRT, identify key points, and mark essential vs optional content.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../../logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Subtle background glows -->
+    <div class="glow-bg">
+        <div class="glow-point pt-left"></div>
+        <div class="glow-point pt-right"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container nav-container">
+            <a href="../../" class="logo">
+                ac<span>Soft</span><span class="dot">.</span>
+            </a>
+            <div class="header-tag">Clipper Tool</div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container container">
+        
+        <!-- API & Upload Section -->
+        <section class="setup-section">
+            <div class="setup-grid">
+                
+                <!-- API Key Card -->
+                <div class="setup-card glass">
+                    <div class="card-header">
+                        <div class="step-num">1</div>
+                        <h3>Set Up Gemini API Key</h3>
+                    </div>
+                    <p class="card-desc">Clipper uses Gemini AI to scan the transcripts. Get a free API Key from <a href="https://aistudio.google.com/apikey" target="_blank" class="accent-link">Google AI Studio</a>.</p>
+                    
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔑</span>
+                            <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API Key..." aria-label="Gemini API Key">
+                        </div>
+                        <div class="key-status-msg" id="keyStatus">Saved in local browser storage</div>
+                    </div>
+                </div>
+
+                <!-- SRT Upload Card -->
+                <div class="setup-card glass">
+                    <div class="card-header">
+                        <div class="step-num">2</div>
+                        <h3>Upload Video Subtitles</h3>
+                    </div>
+                    <p class="card-desc">Drag and drop your subtitle file below. Supports standard <code>.srt</code> format transcripts.</p>
+                    
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📄</div>
+                        <p class="upload-text">Drag & drop your <strong>.srt file</strong> here or <span class="browse-btn">Browse File</span></p>
+                        <input type="file" id="fileInput" accept=".srt" style="display: none;" aria-label="Subtitle File Input">
+                        <div class="file-info" id="fileInfo"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <section class="loading-section glass hidden" id="loadingSection">
+            <div class="spinner"></div>
+            <h3 id="loadingText">Processing Subtitles...</h3>
+            <p>AI is scanning transcript topics, hooks, and semantic clusters to build storyline guides.</p>
+        </section>
+
+        <!-- Stats and Actions Bar -->
+        <section class="control-bar glass hidden" id="controlBar">
+            <div class="stats-group">
+                <div class="stat-item">
+                    <span class="stat-label">Clips Detected</span>
+                    <span class="stat-value" id="statClips">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Avg. Engagement</span>
+                    <span class="stat-value" id="statScore">0.0</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="exportCsvBtn">
+                <span>Export Clips (CSV)</span>
+            </button>
+        </section>
+
+        <!-- Results / Clips Display Section -->
+        <section class="results-section" id="resultsSection">
+            <!-- Dynamic Cards Loaded via JS -->
+            
+            <!-- Default Placeholder State -->
+            <div class="placeholder-state" id="placeholderState">
+                <div class="placeholder-icon">🤖</div>
+                <h3>No Subtitles Uploaded</h3>
+                <p>Provide your Gemini API Key and upload an SRT file to extract clips and analyze storyline points.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <p>&copy; 2026 acSoft. All rights reserved. Powered by Gemini AI.</p>
+        </div>
+    </footer>
+
+    <!-- App Script -->
+    <script src="app.js"></script>
+</body>
+</html>
