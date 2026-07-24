@@ -270,10 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
 You are a world-class AI video producer and viral short-form editor (similar to Opus Clip, Vizard, and Munch).
 Analyze the following transcript cues and extract 4 to 15 highly engaging, stand-alone, viral clips suited for Reels, TikToks, and Shorts. If the video is short or you cannot find many natural highlights, you MUST extract at least 4 sequential clips (dividing the video into 4 logical chronological chapters).
 
-VIRAL SELECTION CRITERIA:
-- Target highly engaging moments: key life lessons, strong actionable tips, stories, lists (e.g., "Step 1", "Point 2"), controversial or counter-intuitive statements, motivational peaks, or deep answers to questions.
-- AVOID filler parts: housekeeping, mic checks, video introductions ("welcome back to my channel"), long pauses, or slow transition sentences.
-- THE HOOK (First 3 seconds): The start of each clip MUST function as a powerful, immediate hook. It must start with an engaging statement, a question, a bold claim, or a story setup. Examples: "This is why...", "If you are...", "The biggest mistake is...", "Do you know that...", "I remember when...".
+VIRAL SELECTION CRITERIA (MAXIMUM VALUE & IMPACT):
+- HIGH-IMPACT PEAK MOMENTS ONLY: Every clip MUST focus on an impactful climax or core revelation—such as a key life lesson, a mind-blowing realization, a powerful emotional story, a counter-intuitive statement, a motivational peak, or a definitive high-value takeaway. Never select random transition talk, setup filler, or boring explanations.
+- AVOID boring or low-energy parts: housekeeping, mic checks, video introductions ("welcome back to my channel"), long pauses, or slow transition sentences.
+- THE HOOK & PAYOFF RULE: The start of each clip MUST function as a powerful, immediate hook (first 3 seconds). It must start with an engaging statement, a question, a bold claim, or a story setup (e.g. "This is why...", "If you are...", "The biggest mistake is..."). Crucially, the clip must build to a clear resolution, punchline, or realization at the end so the viewer feels satisfied.
+- STRICT SEGMENTATION: Do not cut or select random slices of sentences. Ensure the clip has a miniature narrative arc (Setup -> Build-up/Explanation -> Climax/Insight).
 - NEVER start a clip on an incomplete word, mid-sentence conjunction (such as "and", "but", "so", "because", "then", "like"), or inside a broken phrase.
 - RESOLUTION (Ending): The clip must end cleanly on a punchline, a full resolution of the current topic, a call-to-action, or a completed sentence. Avoid cutting off the speaker mid-word or mid-thought.
 
