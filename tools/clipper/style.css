@@ -302,12 +302,7 @@ body {
 }
 
 #fileInput {
-    position: absolute;
-    width: 0.1px;
-    height: 0.1px;
-    opacity: 0;
-    overflow: hidden;
-    z-index: -1;
+    display: none;
 }
 
 .upload-zone:hover, .upload-zone.dragover {
