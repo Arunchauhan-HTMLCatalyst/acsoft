@@ -408,7 +408,7 @@ ${serializedSubs}
                                 <div class="line-row ${isEssential ? 'is-essential' : ''}">
                                     <span class="line-time">${formatTimeShort(line.start)}</span>
                                     <span class="line-badge ${isEssential ? 'essential' : 'optional'}">${tag}</span>
-                                    <span class="line-text">${line.text}</span>
+                                    <span class="line-text" data-index="${line.index}">${line.text}</span>
                                 </div>
                             `;
                         }).join('')}
@@ -448,6 +448,16 @@ ${serializedSubs}
                                 <button class="btn-toggle active" id="btn-16-9-${index}" onclick="toggleLayoutMode(${index}, '16:9')">16:9 Landscape</button>
                                 <button class="btn-toggle" id="btn-9-16-${index}" onclick="toggleLayoutMode(${index}, '9:16')">9:16 Shorts</button>
                             </div>
+                        </div>
+                        <div class="control-row">
+                            <label>Smart Cut:</label>
+                            <label class="switch-container">
+                                <div class="switch">
+                                    <input type="checkbox" id="smart-cut-${index}" onchange="toggleSmartCut(${index}, this.checked)">
+                                    <span class="slider"></span>
+                                </div>
+                                <span>Skip Optional</span>
+                            </label>
                         </div>
                         <div class="control-row hidden" id="reframe-row-${index}">
                             <label>Reframe Focus:</label>
@@ -520,8 +530,38 @@ ${serializedSubs}
                         
                         player.addEventListener('timeupdate', () => {
                             const curTime = player.currentTime;
+                            const smartCutActive = document.getElementById(`smart-cut-${index}`)?.checked;
                             
-                            // Check if current playhead matches any subtitle time boundary
+                            // 1. Smart Cut (Playback skipper)
+                            if (smartCutActive) {
+                                const currentCue = clipCues.find(cue => {
+                                    const start = parseTimeToMs(cue.start) / 1000;
+                                    const end = parseTimeToMs(cue.end) / 1000;
+                                    return curTime >= start && curTime <= end;
+                                });
+                                
+                                if (currentCue && !clip.essentialIds.includes(currentCue.index)) {
+                                    // optional segment: seek to next essential segment
+                                    const nextEssential = clipCues.find(cue => {
+                                        const start = parseTimeToMs(cue.start) / 1000;
+                                        return start > curTime && clip.essentialIds.includes(cue.index);
+                                    });
+                                    
+                                    if (nextEssential) {
+                                        const nextStart = parseTimeToMs(nextEssential.start) / 1000;
+                                        player.currentTime = nextStart;
+                                        return;
+                                    } else {
+                                        // seek to end of the clip player bounds
+                                        const clipEndSec = parseTimeToMs(endTime) / 1000;
+                                        player.currentTime = clipEndSec;
+                                        player.pause();
+                                        return;
+                                    }
+                                }
+                            }
+                            
+                            // 2. Styled Captions Render
                             const activeCue = clipCues.find(cue => {
                                 const start = parseTimeToMs(cue.start) / 1000;
                                 const end = parseTimeToMs(cue.end) / 1000;
@@ -539,7 +579,8 @@ ${serializedSubs}
                                 
                                 overlay.innerHTML = words.map((word, wIdx) => {
                                     const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
-                                    return `<span class="word ${isActive ? 'active' : ''}">${word}</span>`;
+                                    const wordWithEmoji = processWordEmoji(word);
+                                    return `<span class="word ${isActive ? 'active' : ''}">${wordWithEmoji}</span>`;
                                 }).join(' ');
                                 overlay.style.opacity = 1;
                             } else {
@@ -549,6 +590,46 @@ ${serializedSubs}
                     }
                 }, 100);
             }
+        });
+
+        // Bind interactive double-click subtitle editing
+        document.querySelectorAll('.line-text').forEach(span => {
+            span.addEventListener('dblclick', function() {
+                if (this.querySelector('input')) return; // already editing
+                
+                const originalText = this.textContent;
+                const cueIndex = parseInt(this.getAttribute('data-index'), 10);
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'line-edit-input';
+                input.value = originalText;
+                
+                const saveEdit = () => {
+                    const newValue = input.value.trim();
+                    if (newValue && newValue !== originalText) {
+                        const cue = parsedSubtitles.find(s => s.index === cueIndex);
+                        if (cue) cue.text = newValue;
+                        this.textContent = newValue;
+                    } else {
+                        this.textContent = originalText;
+                    }
+                };
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') saveEdit();
+                    if (e.key === 'Escape') {
+                        input.value = originalText;
+                        saveEdit();
+                    }
+                });
+                
+                input.addEventListener('blur', saveEdit);
+                
+                this.textContent = '';
+                this.appendChild(input);
+                input.focus();
+            });
         });
     }
 
@@ -789,15 +870,15 @@ ${serializedSubs}
 
         // Video Slicing: Show confirmation dialog for professional editor options
         const proceed = confirm(
-            "Video Slicing Options:\n\n" +
-            "1. Local Slicing (WebM): Click OK to record and slice this clip locally in your browser. (Note: Slicing runs in real-time, please keep the clip playing until recording is complete).\n\n" +
-            "2. High-Quality Cuts: Cancel this dialog and click 'Export Timeline (EDL)' in the sidebar. You can import that EDL file into DaVinci Resolve or Premiere Pro to instantly cut the source video at 4K/1080p lossless quality.\n\n" +
-            "Do you want to proceed with local browser recording?"
+            "Video Slicing & Captions Export:\n\n" +
+            "1. Local Burn-in (WebM): Click OK to compile and download this clip locally in your browser. Animated captions and 9:16 reframe values will be burned directly into the output video file! (Note: Processing runs in real-time, please keep the clip playing until recording is complete).\n\n" +
+            "2. High-Quality Cut: Cancel this dialog and click 'Export Timeline (EDL)' in the sidebar. You can import that EDL file into DaVinci Resolve or Premiere Pro to instantly cut the source video at 4K/1080p lossless quality.\n\n" +
+            "Do you want to proceed with local caption-burned video export?"
         );
 
         if (!proceed) return;
 
-        btn.textContent = "⏱️ Recording...";
+        btn.textContent = "⏱️ Exporting...";
         btn.disabled = true;
 
         try {
@@ -807,8 +888,69 @@ ${serializedSubs}
                 player.onseeked = () => resolve();
             });
 
-            // Capture stream
-            const stream = player.captureStream ? player.captureStream() : player.mozCaptureStream();
+            // Set up offscreen composition Canvas
+            const container = document.getElementById(`preview-container-${index}`);
+            const isShorts = container?.classList.contains('vertical-shorts');
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (isShorts) {
+                canvas.width = 720;
+                canvas.height = 1280; // Standard vertical HD
+            } else {
+                canvas.width = 1280;
+                canvas.height = 720;  // Standard landscape HD
+            }
+
+            let drawingActive = true;
+            const drawFrame = () => {
+                if (!drawingActive) return;
+                
+                // Draw background
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw scaled video frame (with cover positioning if 9:16)
+                if (isShorts) {
+                    const videoRatio = player.videoWidth / player.videoHeight;
+                    const targetWidth = canvas.height * videoRatio;
+                    const reframeVal = parseInt(document.getElementById(`reframe-slider-${index}`)?.value || 0, 10);
+                    // Shift horizontal position based on slider
+                    const xOffset = (canvas.width - targetWidth) / 2 + (reframeVal * 2.5);
+                    ctx.drawImage(player, xOffset, 0, targetWidth, canvas.height);
+                } else {
+                    ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+                }
+                
+                // Draw captions onto the canvas frame
+                drawCanvasSubtitles(index, ctx, canvas.width, canvas.height, player.currentTime);
+                
+                requestAnimationFrame(drawFrame);
+            };
+
+            // Capture player audio using Web Audio API
+            let audioTrack = null;
+            let audioCtx = null;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!player._audioSourceNode) {
+                    player._audioSourceNode = audioCtx.createMediaElementSource(player);
+                    player._audioDestNode = audioCtx.createMediaStreamDestination();
+                    player._audioSourceNode.connect(player._audioDestNode);
+                    player._audioSourceNode.connect(audioCtx.destination);
+                }
+                audioTrack = player._audioDestNode.stream.getAudioTracks()[0];
+            } catch (aErr) {
+                console.warn("AudioContext capture warning:", aErr);
+            }
+
+            // Combine video stream from Canvas with audio track
+            const canvasStream = canvas.captureStream(30);
+            const tracks = [canvasStream.getVideoTracks()[0]];
+            if (audioTrack) tracks.push(audioTrack);
+            
+            const combinedStream = new MediaStream(tracks);
 
             let options = {};
             let extension = 'webm';
@@ -822,7 +964,7 @@ ${serializedSubs}
                 extension = 'mp4';
             }
 
-            const recorder = new MediaRecorder(stream, options);
+            const recorder = new MediaRecorder(combinedStream, options);
             const chunks = [];
 
             recorder.ondataavailable = e => {
@@ -830,11 +972,14 @@ ${serializedSubs}
             };
 
             recorder.onstop = () => {
+                drawingActive = false;
+                if (audioCtx) audioCtx.close();
+                
                 const blob = new Blob(chunks, { type: options.mimeType || 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_clip.${extension}`;
+                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_vizard_clip.${extension}`;
                 a.click();
                 URL.revokeObjectURL(url);
                 btn.textContent = originalText;
@@ -842,6 +987,7 @@ ${serializedSubs}
             };
 
             player.play();
+            drawFrame(); // start compositing loop
             recorder.start();
 
             // Monitor duration limit and stop recording
@@ -858,6 +1004,95 @@ ${serializedSubs}
             alert("Local recording failed: " + e.message + "\nFallback: Export EDL to edit this video in Premiere/DaVinci.");
             btn.textContent = originalText;
             btn.disabled = false;
+        }
+    };
+
+    // Canvas Subtitles composition renderer (styled and highlighted frame by frame)
+    function drawCanvasSubtitles(index, ctx, width, height, curTime) {
+        const styleName = document.getElementById(`caption-style-${index}`)?.value || 'hormozi';
+        const clip = detectedClips[index];
+        const clipCues = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId);
+        
+        const activeCue = clipCues.find(cue => {
+            const start = parseTimeToMs(cue.start) / 1000;
+            const end = parseTimeToMs(cue.end) / 1000;
+            return curTime >= start && curTime <= end;
+        });
+        
+        if (!activeCue) return;
+        
+        const start = parseTimeToMs(activeCue.start) / 1000;
+        const end = parseTimeToMs(activeCue.end) / 1000;
+        const duration = end - start;
+        const elapsed = curTime - start;
+        
+        const rawWords = activeCue.text.split(/\s+/).filter(w => w.length > 0);
+        const words = rawWords.map(w => processWordEmoji(w));
+        const activeWordIndex = Math.floor((elapsed / (duration || 1)) * words.length);
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        if (styleName === 'hormozi') {
+            ctx.font = '800 36px "Plus Jakarta Sans", "Inter", sans-serif';
+            const textY = height * 0.75;
+            
+            const wordWidths = words.map(w => ctx.measureText(w).width);
+            const spacing = 12;
+            const totalWidth = wordWidths.reduce((sum, w) => sum + w, 0) + spacing * (words.length - 1);
+            
+            let currentX = (width - totalWidth) / 2;
+            words.forEach((word, wIdx) => {
+                const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
+                
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = '#000000';
+                ctx.strokeText(word, currentX + wordWidths[wIdx]/2, textY);
+                
+                ctx.fillStyle = isActive ? '#facc15' : '#ffffff';
+                ctx.fillText(word, currentX + wordWidths[wIdx]/2, textY);
+                
+                currentX += wordWidths[wIdx] + spacing;
+            });
+        } else if (styleName === 'cyber') {
+            ctx.font = '800 32px monospace';
+            const textY = height * 0.75;
+            
+            const wordWidths = words.map(w => ctx.measureText(w).width);
+            const spacing = 10;
+            const totalWidth = wordWidths.reduce((sum, w) => sum + w, 0) + spacing * (words.length - 1);
+            
+            let currentX = (width - totalWidth) / 2;
+            words.forEach((word, wIdx) => {
+                const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
+                
+                ctx.fillStyle = isActive ? '#ff007f' : '#00f2fe';
+                ctx.fillText(word, currentX + wordWidths[wIdx]/2, textY);
+                
+                currentX += wordWidths[wIdx] + spacing;
+            });
+        } else { // minimal
+            ctx.font = '500 24px "Inter", sans-serif';
+            const textY = height * 0.82;
+            
+            const wordWidths = words.map(w => ctx.measureText(w).width);
+            const spacing = 8;
+            const totalWidth = wordWidths.reduce((sum, w) => sum + w, 0) + spacing * (words.length - 1);
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect((width - totalWidth)/2 - 16, textY - 20, totalWidth + 32, 40, 20);
+            ctx.fill();
+            
+            let currentX = (width - totalWidth) / 2;
+            words.forEach((word, wIdx) => {
+                const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
+                
+                ctx.fillStyle = isActive ? '#ffffff' : '#d1d5db';
+                ctx.fillText(word, currentX + wordWidths[wIdx]/2, textY);
+                
+                currentX += wordWidths[wIdx] + spacing;
+            });
         }
     };
 
@@ -983,6 +1218,48 @@ ${serializedSubs}
         if (!overlay) return;
         
         overlay.className = `captions-overlay style-${styleName}`;
+    };
+
+    // Vizard AI Smart Cut Toggle
+    window.toggleSmartCut = function(index, checked) {
+        const card = document.querySelectorAll('.clip-card')[index];
+        if (!card) return;
+        
+        const optionalRows = card.querySelectorAll('.line-row:not(.is-essential)');
+        optionalRows.forEach(row => {
+            if (checked) {
+                row.classList.add('is-skipped');
+            } else {
+                row.classList.remove('is-skipped');
+            }
+        });
+    };
+
+    // Keyword to Emoji Dictionary & Engine
+    const emojiDict = {
+        "money": "💰", "cash": "💵", "rich": "🤑", "wealth": "💎",
+        "fire": "🔥", "hot": "🌶️",
+        "growth": "📈", "grow": "🌱", "up": "🚀", "success": "🏆",
+        "mistake": "❌", "error": "⚠️", "fail": "📉",
+        "secret": "🤫", "hidden": "🔒", "mystery": "🕵️",
+        "love": "❤️", "heart": "💖",
+        "think": "🧠", "idea": "💡", "brain": "🧠",
+        "speak": "🗣️", "talk": "💬", "tell": "📣",
+        "time": "⏱️", "clock": "⏰", "fast": "⚡",
+        "angry": "🤬", "mad": "😡", "happy": "😊",
+        "lol": "😂", "funny": "😆",
+        "power": "⚡", "strong": "💪", "gym": "🏋️",
+        "yes": "✅", "no": "❌", "stop": "🛑",
+        "look": "👀", "see": "👁️", "watch": "📺"
+    };
+
+    window.processWordEmoji = function(word) {
+        if (!word) return "";
+        const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (emojiDict[clean]) {
+            return `${word} ${emojiDict[clean]}`;
+        }
+        return word;
     };
 
     // Reset/Clear button listener to bring back the upload card
