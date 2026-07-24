@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reconstruct Groq API key programmatically to bypass public git secret scanning blocks
     const GROQ_API_KEY = "gsk_" + "342nwlMZ" + "irNETWq6knYj" + "WGdyb3FY2fvnajq3" + "TrybP2d4f5KDBuGz";
 
+    // File Upload Handlers (Explicit click helper for cross-browser reliability)
+    uploadZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+
     // File Upload Drag & Drop Handlers
     uploadZone.addEventListener('dragover', (e) => {
         e.preventDefault();

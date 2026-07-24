@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=1.3">
 </head>
 <body>
 
@@ -50,11 +50,11 @@
                     </div>
                     <p class="card-desc">Drag and drop your file below. Supports <code>.srt</code> transcripts, video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code> up to 1GB), or audio (<code>.mp3</code>, <code>.m4a</code>, <code>.wav</code> up to 500MB).</p>
                     
-                    <label class="upload-zone" id="uploadZone" for="fileInput">
+                    <div class="upload-zone" id="uploadZone">
                         <div class="upload-icon">🎬</div>
                         <p class="upload-text">Drag & drop your <strong>video, audio or .srt</strong> here or <span class="browse-btn">Browse File</span></p>
                         <div class="file-info" id="fileInfo"></div>
-                    </label>
+                    </div>
                     <input type="file" id="fileInput" accept=".srt,.mp3,.wav,.m4a,.mp4,.mov,.webm" aria-label="Media File Input">
                 </div>
 
@@ -115,6 +115,6 @@
     </footer>
 
     <!-- App Script -->
-    <script src="app.js?v=1.11"></script>
+    <script src="app.js?v=1.12"></script>
 </body>
 </html>

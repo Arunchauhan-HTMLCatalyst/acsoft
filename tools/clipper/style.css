@@ -294,7 +294,11 @@ body {
     cursor: pointer;
     transition: var(--transition-smooth);
     background: rgba(255, 255, 255, 0.01);
-    display: block; /* Make label act as a block element */
+    display: block; /* Make label/div act as a block element */
+}
+
+.upload-zone * {
+    pointer-events: none; /* Crucial for Windows: prevents drop/drag events from targets switching to children */
 }
 
 #fileInput {
