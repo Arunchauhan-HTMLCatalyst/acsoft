@@ -398,12 +398,7 @@ ${serializedSubs}
                     console.log(`Guardrail (Shrink): Clip "${clip.title}" auto-shrunk to ${duration.toFixed(1)}s`);
                 }
                 
-                // Double-check essentialIds matching the new corrected range
-                const expandedIds = [];
-                for (let idx = clip.startId; idx <= clip.endId; idx++) {
-                    expandedIds.push(idx);
-                }
-                clip.essentialIds = expandedIds.filter(id => !clip.optionalIds.includes(id));
+
             });
 
             if (detectedClips.length === 0) {
