@@ -106,11 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProgress(20, "Fetching YouTube video details...");
         
         try {
-            const subtitleUrl = await getYouTubeSubtitles(videoId);
+            const { baseUrl, proxy } = await getYouTubeSubtitles(videoId);
             updateProgress(50, "Fetching subtitle tracks...");
             
-            const proxyUrl = 'https://api.allorigins.win/raw?url=';
-            const srtRes = await fetch(proxyUrl + encodeURIComponent(subtitleUrl + '&fmt=srt'));
+            const fetchSubUrl = proxy.includes('?') ? (proxy + encodeURIComponent(baseUrl + '&fmt=srt')) : (proxy + baseUrl + '&fmt=srt');
+            const srtRes = await fetch(fetchSubUrl);
             if (!srtRes.ok) throw new Error("Failed to fetch YouTube subtitles track.");
             
             const srtContent = await srtRes.text();
@@ -143,20 +143,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getYouTubeSubtitles(videoId) {
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
         const targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const proxies = [
+            'https://corsproxy.io/?',
+            'https://api.allorigins.win/raw?url=',
+            'https://api.codetabs.com/v1/proxy?quest='
+        ];
         
-        const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-        if (!response.ok) throw new Error("Failed to load YouTube page.");
-        
-        const html = await response.text();
-        const jsonStr = extractJsonFromString(html, 'ytInitialPlayerResponse');
-        
-        if (!jsonStr) {
-            throw new Error("This YouTube video page layout is not supported or subtitles are restricted.");
+        let lastError = null;
+        for (const proxy of proxies) {
+            try {
+                const fetchUrl = proxy.includes('?') ? (proxy + encodeURIComponent(targetUrl)) : (proxy + targetUrl);
+                const response = await fetch(fetchUrl);
+                if (!response.ok) continue;
+                
+                const html = await response.text();
+                const jsonStr = extractJsonFromString(html, 'ytInitialPlayerResponse');
+                if (!jsonStr) continue;
+                
+                const baseUrl = parseCaptions(JSON.parse(jsonStr));
+                return { baseUrl, proxy };
+            } catch (err) {
+                lastError = err;
+            }
         }
         
-        return parseCaptions(JSON.parse(jsonStr));
+        throw new Error(lastError ? lastError.message : "All proxy connections to YouTube failed. Subtitles are restricted, pages are blocked, or captions are disabled.");
     }
 
     function extractJsonFromString(str, startKeyword) {
