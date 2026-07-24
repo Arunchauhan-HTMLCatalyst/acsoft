@@ -7,11 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadZone = document.getElementById('uploadZone');
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
+    const setupSection = document.getElementById('setupSection');
     const loadingSection = document.getElementById('loadingSection');
     const loadingText = document.getElementById('loadingText');
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
     const controlBar = document.getElementById('controlBar');
+    const resetBtn = document.getElementById('resetBtn');
     const statClips = document.getElementById('statClips');
     const statScore = document.getElementById('statScore');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Audio/Video Transcription via Groq Whisper
     async function transcribeAndAnalyze(file) {
+        setupSection.classList.add('hidden');
         loadingSection.classList.remove('hidden');
         placeholderState.classList.add('hidden');
         resultsSection.innerHTML = '';
@@ -206,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             placeholderState.classList.remove('hidden');
             loadingSection.classList.add('hidden');
             progressContainer.style.display = 'none';
+            setupSection.classList.remove('hidden');
         }
     }
 
@@ -244,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // AI Analysis via Groq API (llama-3.1-8b-instant has very high free rate limits)
     async function analyzeWithAI() {
+        setupSection.classList.add('hidden');
         // Show loading state
         loadingSection.classList.remove('hidden');
         placeholderState.classList.add('hidden');
@@ -344,6 +349,7 @@ ${serializedSubs}
             console.error(error);
             alert(`Analysis failed: ${error.message}`);
             placeholderState.classList.remove('hidden');
+            setupSection.classList.remove('hidden');
         } finally {
             loadingSection.classList.add('hidden');
             progressContainer.style.display = 'none';
@@ -435,35 +441,47 @@ ${serializedSubs}
                 `;
             }
 
-            card.innerHTML = `
-                <div class="clip-header">
-                    <div class="clip-title-area">
-                        <h4>Clip #${index + 1}: ${clip.title}</h4>
-                        <div class="clip-meta">
-                            <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
-                                ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
-                            </span>
-                            <span class="clip-duration">${durationText}</span>
-                        </div>
-                    </div>
-                    <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
+            card.className = `clip-card glass ${rawMediaFile ? '' : 'no-media'}`;
+
+            // Left Column (Player & Controls)
+            const leftColHtml = rawMediaFile ? `
+                <div class="clip-card-left">
+                    ${mediaSliceHtml}
                 </div>
+            ` : '';
 
-                ${mediaSliceHtml}
-
-                ${linesHtml}
-
-                <div class="analysis-box">
-                    <div class="storyline-info">
-                        <strong>Storyline Flow:</strong>
-                        <p>${clip.storyline}</p>
+            // Right Column (Metadata, lines, analysis)
+            const rightColHtml = `
+                <div class="clip-card-right">
+                    <div class="clip-header">
+                        <div class="clip-title-area">
+                            <h4>Clip #${index + 1}: ${clip.title}</h4>
+                            <div class="clip-meta">
+                                <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
+                                    ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
+                                </span>
+                                <span class="clip-duration">${durationText}</span>
+                            </div>
+                        </div>
+                        <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
                     </div>
-                    <div class="reasoning-info">
-                        <strong>Why it works:</strong>
-                        <p>${clip.reasoning}</p>
+
+                    ${linesHtml}
+
+                    <div class="analysis-box">
+                        <div class="storyline-info">
+                            <strong>Storyline Flow:</strong>
+                            <p>${clip.storyline}</p>
+                        </div>
+                        <div class="reasoning-info">
+                            <strong>Why it works:</strong>
+                            <p>${clip.reasoning}</p>
+                        </div>
                     </div>
                 </div>
             `;
+
+            card.innerHTML = rawMediaFile ? (leftColHtml + rightColHtml) : rightColHtml;
             resultsSection.appendChild(card);
         });
     }
@@ -857,5 +875,30 @@ ${serializedSubs}
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    });
+
+    // Reset/Clear button listener to bring back the upload card
+    resetBtn.addEventListener('click', () => {
+        parsedSubtitles = [];
+        detectedClips = [];
+        rawMediaFile = null;
+        rawSrtContent = "";
+        
+        fileInput.value = "";
+        fileInfo.textContent = "";
+        
+        resultsSection.innerHTML = `
+            <div class="placeholder-state" id="placeholderState">
+                <div class="placeholder-icon">🤖</div>
+                <h3>No Subtitles or Media Uploaded</h3>
+                <p>Upload a video, audio, or SRT file above to extract clips, get local preview slices, and download your edit timelines.</p>
+            </div>
+        `;
+        
+        const placeholder = document.getElementById('placeholderState');
+        if (placeholder) placeholder.classList.remove('hidden');
+        
+        controlBar.classList.add('hidden');
+        setupSection.classList.remove('hidden');
     });
 });
