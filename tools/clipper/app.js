@@ -1291,6 +1291,9 @@ ${serializedSubs}
 
         let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
 
+        const fileName = rawMediaFile ? rawMediaFile.name : "source_video.mp4";
+        const tapeName = fileName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8).toUpperCase() || "SOURCE";
+
         detectedClips.forEach((clip, index) => {
             const clipNumStr = String(index + 1).padStart(3, '0');
             
@@ -1298,8 +1301,9 @@ ${serializedSubs}
             const edlStart = srtTimeToEDLTime(clip.startTime);
             const edlEnd = srtTimeToEDLTime(clip.endTime);
 
-            // Mock timeline edits (record source in track V1, cut from source start to end, target timeline start dynamically)
-            edlContent += `${clipNumStr}  AX       V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
+            // CMX 3600 EDL edits with actual tape name and file descriptors for Premiere/Resolve auto-linking
+            edlContent += `${clipNumStr}  ${tapeName.padEnd(8, ' ')} V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
+            edlContent += `* FROM FILE: ${fileName}\n`;
             edlContent += `* FROM CLIP: ${clip.title.toUpperCase()}\n\n`;
         });
 
