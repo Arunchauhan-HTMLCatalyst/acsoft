@@ -72,12 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Size limits checks
-        if (isAudio && sizeMB > 100) {
-            alert(`Audio file is too large (${sizeMB.toFixed(1)}MB). Max limit is 100MB.`);
+        if (isAudio && sizeMB > 500) {
+            alert(`Audio file is too large (${sizeMB.toFixed(1)}MB). Max limit is 500MB.`);
             return;
         }
-        if (isVideo && sizeMB > 200) {
-            alert(`Video file is too large (${sizeMB.toFixed(1)}MB). Max limit is 200MB.`);
+        if (isVideo && sizeMB > 1024) {
+            alert(`Video file is too large (${sizeMB.toFixed(1)}MB). Max limit is 1GB (1024MB).`);
             return;
         }
 
