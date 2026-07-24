@@ -123,11 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return items;
     }
 
-    // AI Analysis via Gemini API
+    // AI Analysis via Groq API
     async function analyzeWithAI() {
         const apiKey = apiKeyInput.value.trim();
         if (!apiKey) {
-            alert('Please set your Gemini API Key in Step 1 first.');
+            alert('Please set your Groq API Key in Step 1 first.');
             return;
         }
 
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // but for general clips analysis, we send a compressed list of cues.
         const serializedSubs = parsedSubtitles.map(s => `[${s.start} -> ${s.end}] ${s.text}`).join('\n');
 
-        // Instruct Gemini 1.5 Flash to return JSON listing the clips
+        // Instruct Groq's Llama 3.3 70B model to return JSON listing the clips
         const prompt = `
 You are an expert AI video clipping assistant for short-form video editors (Reels, TikTok, Shorts).
 Analyze the following video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
@@ -190,28 +190,32 @@ ${serializedSubs}
 `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        responseMimeType: "application/json"
-                    }
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ],
+                    response_format: { "type": "json_object" },
+                    temperature: 0.3
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Gemini API Error');
+                throw new Error(errorData.error?.message || 'Groq API Error');
             }
 
             const data = await response.json();
-            const textResponse = data.candidates[0].content.parts[0].text;
+            const textResponse = data.choices[0].message.content;
             
             // Parse response json
             const result = JSON.parse(textResponse);
