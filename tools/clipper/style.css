@@ -579,7 +579,7 @@ body {
 
 .line-row {
     display: grid;
-    grid-template-columns: 80px 160px 1fr;
+    grid-template-columns: 80px 1fr;
     align-items: center;
     gap: 16px;
     padding: 10px 12px;
@@ -590,25 +590,19 @@ body {
     transition: all 0.2s ease;
 }
 
-.line-row.is-essential {
-    background: rgba(16, 185, 129, 0.02);
-    border: 1px solid rgba(16, 185, 129, 0.12);
+.line-row:hover {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
-.line-row:not(.is-essential) {
-    background: rgba(239, 68, 68, 0.01);
-    border: 1px dashed rgba(239, 68, 68, 0.08);
-    opacity: 0.45;
-}
-
-.line-row:not(.is-essential) .line-text {
-    text-decoration: line-through;
-    color: var(--color-text-muted);
+.line-text {
+    color: #fff;
+    font-weight: 500;
 }
 
 @media (max-width: 600px) {
     .line-row {
-        grid-template-columns: 70px 130px 1fr;
+        grid-template-columns: 70px 1fr;
         gap: 8px;
         padding: 8px;
         font-size: 0.78rem;
@@ -620,36 +614,7 @@ body {
     color: var(--color-text-muted);
 }
 
-.line-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-align: center;
-}
 
-.line-badge.essential {
-    background: var(--color-essential-bg);
-    color: var(--color-essential);
-    border: 1px solid rgba(16, 185, 129, 0.15);
-}
-
-.line-badge.optional {
-    background: var(--color-optional-bg);
-    color: var(--color-optional);
-    border: 1px solid rgba(245, 158, 11, 0.15);
-}
-
-.line-text {
-    color: var(--color-text-secondary);
-}
-
-.line-row.is-essential .line-text {
-    color: #fff;
-    font-weight: 500;
-}
 
 /* Storyline Description and Hooks */
 .analysis-box {

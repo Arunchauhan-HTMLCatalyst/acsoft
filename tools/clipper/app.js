@@ -267,57 +267,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Instruct Groq's Llama 3.1 8B model to return JSON listing the clips
         const prompt = `
-You are a world-class AI video producer and viral short-form editor (similar to Opus Clip, Vizard, and Munch).
-Analyze the following transcript cues and extract 4 to 15 highly engaging, stand-alone, viral clips suited for Reels, TikToks, and Shorts. If the video is short or you cannot find many natural highlights, you MUST extract at least 4 sequential clips (dividing the video into 4 logical chronological chapters).
+You are a world-class AI video producer, chief editor, and viral growth hacking consultant (similar to Opus Clip, Vizard, and Munch).
+Your job is to analyze the transcript cues and extract the most engaging, stand-alone, impactful clips suited for Reels, TikToks, and Shorts.
 
-VIRAL SELECTION CRITERIA (MAXIMUM VALUE & IMPACT):
-- HIGH-IMPACT PEAK MOMENTS ONLY: Every clip MUST focus on an impactful climax or core revelation—such as a key life lesson, a mind-blowing realization, a powerful emotional story, a counter-intuitive statement, a motivational peak, or a definitive high-value takeaway. Never select random transition talk, setup filler, or boring explanations.
-- AVOID boring or low-energy parts: housekeeping, mic checks, video introductions ("welcome back to my channel"), long pauses, or slow transition sentences.
-- THE HOOK & PAYOFF RULE: The start of each clip MUST function as a powerful, immediate hook (first 3 seconds). It must start with an engaging statement, a question, a bold claim, or a story setup (e.g. "This is why...", "If you are...", "The biggest mistake is..."). Crucially, the clip must build to a clear resolution, punchline, or realization at the end so the viewer feels satisfied.
-- STRICT SEGMENTATION: Do not cut or select random slices of sentences. Ensure the clip has a miniature narrative arc (Setup -> Build-up/Explanation -> Climax/Insight).
-- NEVER start a clip on an incomplete word, mid-sentence conjunction (such as "and", "but", "so", "because", "then", "like"), or inside a broken phrase.
-- RESOLUTION (Ending): The clip must end cleanly on a punchline, a full resolution of the current topic, a call-to-action, or a completed sentence. Avoid cutting off the speaker mid-word or mid-thought.
+CRITICAL REQUIREMENT:
+- Extract 4 to 15 highly engaging, stand-alone, viral clips.
+- If the video is short or you cannot find many natural highlights, you MUST extract at least 4 sequential clips (dividing the video into 4 logical chronological chapters).
 
-CRITICAL RULES FOR CLIPS:
-- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds, and NEVER create clips that are longer than 100 seconds (e.g. 120s or 189s clips are strictly forbidden). Double-check the timestamps of your startId and endId.
-- STORY ARC COMPLETENESS & COHESION: A clip must cover one single, cohesive, complete topic or sub-topic from start to end (Introduction of thought -> Explanation -> Takeaway/Climax/Resolution). It should feel like a meaningful mini-video, not a random slice. Do not combine multiple unrelated thoughts together.
-- STRICT SENTENCE INTEGRITY: Never skip or mark a line as optional in the middle of a sentence or a cohesive clause. If you skip a line, the surrounding lines must form a 100% complete, grammatically correct sentence. Every single sentence spoken in the final timeline must be fully complete from start to finish. Partial sentence skipping is strictly forbidden.
-- CONSERVATIVE AND MINIMAL SKIPPING: Keep the "optionalIds" array extremely minimal (typically 0 to 1 cue per clip max). Only skip lines that are completely unnecessary and redundant (e.g. actual stutters, long pauses/silences, or complete off-topic tangents). Do not skip standard dialogue or explanations. If in doubt, keep the cue as essential.
-- Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
+=========================================
+1. NO SKIPPING SYSTEM (100% DIALOGUE CONTINUITY)
+=========================================
+- DO NOT mark any lines as optional, skipped, or trimmed. Every single cue within the selected clip range (from startId to endId) will be played continuously.
+- Therefore, you do not need to identify "essentialIds", "optionalIds", or "trimReasons" anymore.
+- Focus entirely on choosing the perfect startId and endId where the entire continuous block of dialogue is extremely solid, high-value, and engaging from beginning to end.
 
-MULTILINGUAL SUPPORT & TRANSLATION RULES:
+=========================================
+2. VIRAL SELECTION ARCHETYPES (CHOOSE FROM THESE)
+=========================================
+Your selected clips must fit one of the following high-impact short-form video archetypes:
+A. THE MYTH BUSTER: Where the speaker challenges a common belief, exposes a lie, or shares a counter-intuitive truth. (e.g. "Most people think X, but actually Y...")
+B. THE ACTIONABLE BLUEPRINT: A step-by-step tutorial, list, or blueprint that gives the user immediate value. (e.g. "Here is a 3-step formula to...")
+C. THE EMOTIONAL CLIMAX: An inspiring story, a vulnerability leak, a personal struggle, or a deep life lesson that creates a strong emotional connection.
+D. THE INSIGHTFUL Q&A: A direct, deep answer to a complex or highly-debated question.
+
+=========================================
+3. THE HOOK & PAYOFF RULE (STRICT START & END BOUNDS)
+=========================================
+- THE HOOK (First 3 seconds): The startId MUST function as a powerful, immediate hook. It must begin with a strong statement, a question, a bold claim, or a story setup.
+  * GOOD: "This is the single biggest mistake...", "If you want to grow...", "I remember when...", "Do you know what happens when..."
+  * BAD (Never start here): Conjunctions ("and", "but", "so", "because", "then", "like"), filler stutters, mid-sentence thoughts, or transition phrases.
+- THE PAYOFF (The Climax & Resolution at endId): The clip must end cleanly on a punchline, a full resolution of the current topic, a call-to-action, or a completed sentence.
+  * Ensure the viewer feels a sense of completion. Avoid cutting off the speaker mid-word, mid-sentence, or in the middle of an unresolved point.
+
+=========================================
+4. DURATION BOUNDS
+=========================================
+- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds.
+- Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds, and NEVER create clips that are longer than 100 seconds (e.g. 120s or 189s clips are strictly forbidden). Double-check the timestamps of your startId and endId.
+
+=========================================
+5. MULTILINGUAL SUPPORT & TRANSLATION RULES
+=========================================
 - The input transcript might be in English, Hindi (Devanagari or Hinglish), Marathi, Tamil, Punjabi, Telugu, Gujarati, Bengali, or any other major language.
-- You must dynamically support and understand all these languages.
 - Crucially, the returned JSON fields "title", "storyline", and "reasoning" MUST ALWAYS be written in clear, fluent, professional English (no mixing or local scripts), regardless of the input transcript language.
 
-For each clip, you must:
-1. Provide a catchy, viral-style Title.
-2. Assign a Virality/Engagement Score from 1.0 to 10.0.
-3. Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
-4. Identify which cue IDs within that clip range are:
-   - "essentialIds": Core message, critical storyline points that must be spoken/kept.
-   - "optionalIds": Cues that are redundant stutters, long silences, filler words, or off-topic repetitions that can be safely skipped/trimmed without changing the flow or meaning of the main clip.
-5. Provide a "trimReasons" map where the key is the optional cue ID (as a string) and the value is a very short reason (under 4 words) explaining why it is safe to skip (e.g. "Repetition", "Filler word", "Off-topic tangent", "Silence/pause").
-6. Provide a 1-line storyline description of the clip's flow.
-7. Provide 1-line reasoning on why this clip will perform well.
-
+=========================================
+6. OUTPUT JSON FORMAT
+=========================================
 Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
 
 {
   "clips": [
     {
-      "title": "Clip Title Here",
-      "score": 9.2,
+      "title": "A highly-viral, engaging hook title",
+      "score": 9.5,
       "startId": 12,
-      "endId": 25,
-      "essentialIds": [12, 13, 16, 17],
-      "optionalIds": [14, 15],
-      "trimReasons": {
-        "14": "Filler words",
-        "15": "Repetitive thought"
-      },
-      "storyline": "One-line storyline description.",
-      "reasoning": "Why this works."
+      "endId": 38,
+      "storyline": "Detailed explanation of the narrative flow of this clip.",
+      "reasoning": "Psychological trigger or viral growth reason why this clip will get high watch time and engagement."
     }
   ]
 }
@@ -458,22 +465,8 @@ ${serializedSubs}
                 const e = parseTimeToMs(endTime);
                 rawDurationSec = (e - s) / 1000;
             } catch {}
-            
-            // Calculate exact essential dialogue duration (predicted final cut duration)
-            let essentialDurationMs = 0;
-            const clipEssentialLines = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId && clip.essentialIds.includes(s.index));
-            clipEssentialLines.forEach(line => {
-                try {
-                    const lineStart = parseTimeToMs(line.start);
-                    const lineEnd = parseTimeToMs(line.end);
-                    // Add 10ms per cue buffer (5ms start, 5ms end) for 100% exact EDL timeline predictions
-                    essentialDurationMs += (lineEnd - lineStart + 10);
-                } catch {}
-            });
-            const cutDurationSec = essentialDurationMs / 1000;
 
             const durationText = `${rawDurationSec.toFixed(1)}s`;
-            const cutDurationText = `${cutDurationSec.toFixed(1)}s`;
 
             // Dynamically reconstruct the lines list based on index range
             let linesHtml = '';
@@ -483,16 +476,9 @@ ${serializedSubs}
                 linesHtml = `
                     <div class="lines-container">
                         ${clipLines.map(line => {
-                            const isEssential = clip.essentialIds.includes(line.index);
-                            let tag = 'ESSENTIAL';
-                            if (!isEssential) {
-                                const reason = clip.trimReasons ? (clip.trimReasons[line.index] || clip.trimReasons[String(line.index)]) : '';
-                                tag = reason ? `SKIP: ${reason.toUpperCase()}` : 'SKIP/TRIM';
-                            }
                             return `
-                                <div class="line-row ${isEssential ? 'is-essential' : ''}">
+                                <div class="line-row">
                                     <span class="line-time">${formatTimeShort(line.start)}</span>
-                                    <span class="line-badge ${isEssential ? 'essential' : 'optional'}">${tag}</span>
                                     <span class="line-text" data-index="${line.index}">${line.text}</span>
                                 </div>
                             `;
@@ -513,8 +499,7 @@ ${serializedSubs}
                                 <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
                                     ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
                                 </span>
-                                <span class="clip-duration">Raw: ${durationText}</span>
-                                <span class="clip-cut-duration">⚡ Cut: ${cutDurationText}</span>
+                                <span class="clip-duration">Duration: ${durationText}</span>
                             </div>
                         </div>
                         <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
