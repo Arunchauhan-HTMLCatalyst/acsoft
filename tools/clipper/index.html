@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.4">
+    <link rel="stylesheet" href="style.css?v=1.5">
 </head>
 <body>
 
@@ -38,75 +38,71 @@
     <!-- Main Content Container -->
     <main class="main-container container">
         
-        <!-- Upload Section -->
-        <section class="setup-section">
-            <div class="setup-grid-single">
-                
-                <!-- Video, Audio or SRT Upload Card -->
-                <div class="setup-card glass">
-                    <div class="card-header">
-                        <div class="step-num">⚡</div>
-                        <h3>Upload Video, Audio or Subtitles</h3>
-                    </div>
-                    <p class="card-desc">Drag and drop your file below. Supports <code>.srt</code> transcripts, video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code> up to 1GB), or audio (<code>.mp3</code>, <code>.m4a</code>, <code>.wav</code> up to 500MB).</p>
-                    
-                    <div class="upload-zone" id="uploadZone">
-                        <div class="upload-icon">🎬</div>
-                        <p class="upload-text">Drag & drop your <strong>video, audio or .srt</strong> here or <span class="browse-btn">Browse File</span></p>
-                        <div class="file-info" id="fileInfo"></div>
-                    </div>
-                    <input type="file" id="fileInput" accept=".srt,.mp3,.wav,.m4a,.mp4,.mov,.webm" aria-label="Media File Input">
-                </div>
-
-            </div>
-        </section>
-
-        <!-- Loading State -->
-        <section class="loading-section glass hidden" id="loadingSection">
-            <div class="spinner"></div>
-            <h3 id="loadingText">Processing Subtitles...</h3>
-            <div class="progress-container" id="progressContainer" style="width: 100%; max-width: 320px; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 10px; margin: 16px auto; overflow: hidden; display: none; border: 1px solid rgba(255, 255, 255, 0.05);">
-                <div class="progress-bar" id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #32ccca, #00f2fe); border-radius: 10px; transition: width 0.2s ease;"></div>
-            </div>
-            <p>AI is scanning transcript topics, hooks, and semantic clusters to build storyline guides.</p>
-        </section>
-
-        <!-- Stats and Actions Bar -->
-        <section class="control-bar glass hidden" id="controlBar">
-            <div class="stats-group">
-                <div class="stat-item">
-                    <span class="stat-label">Clips Detected</span>
-                    <span class="stat-value" id="statClips">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Avg. Engagement</span>
-                    <span class="stat-value" id="statScore">0.0</span>
-                </div>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-outline" id="exportSrtBtn" style="margin-right: 8px;">
-                    <span>Download Subtitles (SRT)</span>
-                </button>
-                <button class="btn btn-outline" id="exportEdlBtn" style="margin-right: 8px;">
-                    <span>Export Timeline (EDL)</span>
-                </button>
-                <button class="btn btn-primary" id="exportCsvBtn">
-                    <span>Export Clips (CSV)</span>
-                </button>
-            </div>
-        </section>
-
-        <!-- Results / Clips Display Section -->
-        <section class="results-section" id="resultsSection">
-            <!-- Dynamic Cards Loaded via JS -->
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
             
-            <!-- Default Placeholder State -->
-            <div class="placeholder-state" id="placeholderState">
-                <div class="placeholder-icon">🤖</div>
-                <h3>No Subtitles or Media Uploaded</h3>
-                <p>Upload a video, audio, or SRT file to extract clips, get local preview slices, and download your edit timelines.</p>
+            <!-- Left Side: Clips Column -->
+            <div class="dashboard-left">
+                <!-- Results / Clips Display Section -->
+                <section class="results-section" id="resultsSection">
+                    <!-- Default Placeholder State -->
+                    <div class="placeholder-state" id="placeholderState">
+                        <div class="placeholder-icon">🤖</div>
+                        <h3>No Subtitles or Media Uploaded</h3>
+                        <p>Upload a video, audio, or SRT file in the sidebar to extract clips, get local preview slices, and download your edit timelines.</p>
+                    </div>
+                </section>
             </div>
-        </section>
+            
+            <!-- Right Side: Sidebar Column (Upload box, Stats, Actions) -->
+            <div class="dashboard-right">
+                
+                <!-- Upload Card -->
+                <section class="setup-section">
+                    <div class="setup-card glass">
+                        <div class="card-header">
+                            <div class="step-num">⚡</div>
+                            <h3>Upload Media</h3>
+                        </div>
+                        <p class="card-desc">Drag and drop your file below. Supports <code>.srt</code>, video (up to 1GB), or audio (up to 500MB).</p>
+                        
+                        <div class="upload-zone" id="uploadZone" style="padding: 16px 12px;">
+                            <div class="upload-icon" style="font-size: 1.5rem; margin-bottom: 4px;">🎬</div>
+                            <p class="upload-text" style="font-size: 0.78rem; line-height: 1.3;">Drag & drop or <br><span class="browse-btn">Browse File</span></p>
+                            <div class="file-info" id="fileInfo" style="font-size: 0.75rem; margin-top: 6px;"></div>
+                        </div>
+                        <input type="file" id="fileInput" accept=".srt,.mp3,.wav,.m4a,.mp4,.mov,.webm" aria-label="Media File Input">
+                    </div>
+                </section>
+
+                <!-- Stats & Action Buttons Card -->
+                <section class="control-bar glass hidden" id="controlBar">
+                    <div class="sidebar-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Clips Detected</span>
+                            <span class="stat-value" id="statClips">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg. Engagement</span>
+                            <span class="stat-value" id="statScore">0.0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-outline" id="exportSrtBtn">
+                            <span>Download Subtitles (SRT)</span>
+                        </button>
+                        <button class="btn btn-outline" id="exportEdlBtn">
+                            <span>Export Timeline (EDL)</span>
+                        </button>
+                        <button class="btn btn-primary" id="exportCsvBtn">
+                            <span>Export Clips (CSV)</span>
+                        </button>
+                    </div>
+                </section>
+                
+            </div>
+        </div>
 
     </main>
 

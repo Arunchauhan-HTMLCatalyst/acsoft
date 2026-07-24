@@ -741,3 +741,76 @@ body {
     border-color: var(--color-accent);
     color: var(--color-accent);
 }
+
+/* Dashboard Grid Layout (Left Side Clips / Right Side Utilities) */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 30px;
+    align-items: start;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.dashboard-left {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: sticky;
+    top: 100px;
+}
+
+.sidebar-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+}
+
+.sidebar-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dashboard-right .control-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px;
+    margin-bottom: 0;
+}
+
+.dashboard-right .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.dashboard-right .action-buttons .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 12px;
+}
+
+/* Responsiveness: Stack columns on smaller screens */
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-right {
+        position: static;
+    }
+}
