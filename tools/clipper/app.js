@@ -450,21 +450,21 @@ ${serializedSubs}
                 rawDurationSec = (e - s) / 1000;
             } catch {}
             
-            // Calculate optional filler/silence duration within this clip
-            let optionalDurationMs = 0;
-            const clipOptionalLines = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId && clip.optionalIds.includes(s.index));
-            clipOptionalLines.forEach(line => {
+            // Calculate exact essential dialogue duration (predicted final cut duration)
+            let essentialDurationMs = 0;
+            const clipEssentialLines = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId && clip.essentialIds.includes(s.index));
+            clipEssentialLines.forEach(line => {
                 try {
                     const lineStart = parseTimeToMs(line.start);
                     const lineEnd = parseTimeToMs(line.end);
-                    optionalDurationMs += (lineEnd - lineStart);
+                    // Add 10ms per cue buffer (5ms start, 5ms end) for 100% exact EDL timeline predictions
+                    essentialDurationMs += (lineEnd - lineStart + 10);
                 } catch {}
             });
-            const optionalDurationSec = optionalDurationMs / 1000;
-            const cutDurationSec = Math.max(0, rawDurationSec - optionalDurationSec);
+            const cutDurationSec = essentialDurationMs / 1000;
 
-            const durationText = `${Math.round(rawDurationSec)}s`;
-            const cutDurationText = `${Math.round(cutDurationSec)}s`;
+            const durationText = `${rawDurationSec.toFixed(1)}s`;
+            const cutDurationText = `${cutDurationSec.toFixed(1)}s`;
 
             // Dynamically reconstruct the lines list based on index range
             let linesHtml = '';
