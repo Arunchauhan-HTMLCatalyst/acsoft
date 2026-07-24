@@ -268,6 +268,8 @@ CRITICAL RULES FOR CLIPS:
 - Each clip MUST be a minimum of 30 seconds and a maximum of 90 seconds. 
 - You can make a clip slightly shorter than 30 seconds ONLY if it is necessary to keep the storyline cohesive and clean, but never exceed 90 seconds.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
+- HOOK-CENTRIC START CUE REQUIREMENT: Every clip's start cue MUST represent the beginning of a clean, coherent sentence, a new thought, or a key question.
+- NEVER start a clip on a mid-sentence conjunction (such as "and", "but", "so", "because", "then", "like"), a random word, or inside a broken phrase. Adjust the starting cue ID forward or backward to ensure the first spoken line functions as a clean, engaging hook.
 
 For each clip, you must:
 1. Provide a catchy, viral-style Title.
@@ -419,8 +421,8 @@ ${serializedSubs}
                 mediaSliceHtml = `
                     <div class="media-preview-container">
                         ${isVideo ? 
-                            `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}" preload="metadata" controls></video>` :
-                            `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}" preload="metadata" controls></audio>`
+                            `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></video>` :
+                            `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></audio>`
                         }
                         <div class="slice-controls">
                             <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
@@ -643,13 +645,74 @@ ${serializedSubs}
         }
     };
 
-    // Slice downloader using MediaRecorder (Record locally directly in browser without server)
+    // Slice downloader: Instant slicing for Audio, High-fidelity recording fallback for Video
     window.downloadSlice = async function(index, start, end, title) {
         const player = document.getElementById(`media-player-${index}`);
         if (!player) return;
 
         const originalText = document.querySelectorAll('.btn-slice-action')[index * 2 + 1].textContent;
         const btn = document.querySelectorAll('.btn-slice-action')[index * 2 + 1];
+
+        const isVideo = rawMediaFile && (rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm'));
+
+        if (!isVideo) {
+            // Audio Slicing: 100% Instant local buffer slice in less than a second!
+            btn.textContent = "⚡ Slicing...";
+            btn.disabled = true;
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await rawMediaFile.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+                const sampleRate = audioBuffer.sampleRate;
+                const startOffset = Math.floor(start * sampleRate);
+                const endOffset = Math.floor(end * sampleRate);
+                const frameCount = Math.max(0, endOffset - startOffset);
+
+                if (frameCount === 0) throw new Error("Invalid slice duration range.");
+
+                const slicedBuffer = audioCtx.createBuffer(
+                    audioBuffer.numberOfChannels,
+                    frameCount,
+                    sampleRate
+                );
+
+                for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                    const channelData = audioBuffer.getChannelData(channel);
+                    const slicedData = slicedBuffer.getChannelData(channel);
+                    slicedData.set(channelData.subarray(startOffset, endOffset));
+                }
+
+                const wavBlob = audioBufferToWav(slicedBuffer);
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_clip.wav`;
+                a.click();
+                URL.revokeObjectURL(url);
+                audioCtx.close();
+
+                btn.textContent = originalText;
+                btn.disabled = false;
+            } catch (err) {
+                console.error("Instant audio slicing failed:", err);
+                alert("Instant audio slicing failed: " + err.message);
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+            return;
+        }
+
+        // Video Slicing: Show confirmation dialog for professional editor options
+        const proceed = confirm(
+            "Video Slicing Options:\n\n" +
+            "1. Local Slicing (WebM): Click OK to record and slice this clip locally in your browser. (Note: Slicing runs in real-time, please keep the clip playing until recording is complete).\n\n" +
+            "2. High-Quality Cuts: Cancel this dialog and click 'Export Timeline (EDL)' in the sidebar. You can import that EDL file into DaVinci Resolve or Premiere Pro to instantly cut the source video at 4K/1080p lossless quality.\n\n" +
+            "Do you want to proceed with local browser recording?"
+        );
+
+        if (!proceed) return;
+
         btn.textContent = "⏱️ Recording...";
         btn.disabled = true;
 
@@ -662,32 +725,17 @@ ${serializedSubs}
 
             // Capture stream
             const stream = player.captureStream ? player.captureStream() : player.mozCaptureStream();
-            
-            // Detect file type & negotiate supported MIME types dynamically (prevents Safari/Firefox errors)
-            const isVideo = rawMediaFile && (rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm'));
-            
+
             let options = {};
             let extension = 'webm';
-            
-            if (isVideo) {
-                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-                    options = { mimeType: 'video/webm;codecs=vp9' };
-                } else if (MediaRecorder.isTypeSupported('video/webm')) {
-                    options = { mimeType: 'video/webm' };
-                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-                    options = { mimeType: 'video/mp4' };
-                    extension = 'mp4';
-                }
-            } else {
-                if (MediaRecorder.isTypeSupported('audio/webm')) {
-                    options = { mimeType: 'audio/webm' };
-                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                    options = { mimeType: 'audio/mp4' };
-                    extension = 'mp4';
-                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-                    options = { mimeType: 'audio/ogg' };
-                    extension = 'ogg';
-                }
+
+            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                options = { mimeType: 'video/webm;codecs=vp9' };
+            } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                options = { mimeType: 'video/webm' };
+            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/mp4' };
+                extension = 'mp4';
             }
 
             const recorder = new MediaRecorder(stream, options);
@@ -722,8 +770,8 @@ ${serializedSubs}
             }, 100);
 
         } catch (e) {
-            console.error("Local slicing failed:", e);
-            alert("Local slicing failed: " + e.message + "\nFallback: Try manually seeking to timestamps.");
+            console.error("Local video recording failed:", e);
+            alert("Local recording failed: " + e.message + "\nFallback: Export EDL to edit this video in Premiere/DaVinci.");
             btn.textContent = originalText;
             btn.disabled = false;
         }
