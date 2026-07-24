@@ -119,10 +119,30 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholderState.classList.add('hidden');
         resultsSection.innerHTML = '';
         controlBar.classList.add('hidden');
+
+        let fileToSend = file;
+        const sizeMB = file.size / (1024 * 1024);
+        const isVideo = file.name.toLowerCase().endsWith('.mp4') || file.name.toLowerCase().endsWith('.mov') || file.name.toLowerCase().endsWith('.webm');
+        const isAudio = file.name.toLowerCase().endsWith('.mp3') || file.name.toLowerCase().endsWith('.wav') || file.name.toLowerCase().endsWith('.m4a');
+
+        if (isVideo || isAudio) {
+            try {
+                loadingText.textContent = "Extracting & Compressing Audio locally...";
+                fileToSend = await extractAndDownsampleAudio(file);
+                const compSizeMB = fileToSend.size / (1024 * 1024);
+                console.log(`Audio compressed from ${sizeMB.toFixed(1)}MB to ${compSizeMB.toFixed(1)}MB`);
+            } catch (err) {
+                console.error("Local compression failed, sending original file:", err);
+                if (sizeMB > 25) {
+                    alert("Local compression failed (browser memory limits). Sending original file, but files > 25MB will likely fail. Please upload an .srt file directly for large files.");
+                }
+            }
+        }
+
         loadingText.textContent = "Transcribing Audio via AI...";
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileToSend, 'audio.wav');
         formData.append('model', 'whisper-large-v3-turbo');
         formData.append('response_format', 'verbose_json');
 
@@ -453,6 +473,92 @@ ${serializedSubs}
         const m = parseInt(timeParts[1] || '0', 10) * 60000;
         const s = parseInt(timeParts[2] || '0', 10) * 1000;
         return h + m + s + ms;
+    }
+
+    // Local Audio Extractor and Downsampler (Web Audio API)
+    async function extractAndDownsampleAudio(file) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Decode audio track from the media file container
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        // Downsample to 16000Hz mono (standard target for Whisper AI transcription)
+        const targetSampleRate = 16000;
+        const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetSampleRate, targetSampleRate);
+        
+        const bufferSource = offlineCtx.createBufferSource();
+        bufferSource.buffer = audioBuffer;
+        bufferSource.connect(offlineCtx.destination);
+        bufferSource.start();
+        
+        const renderedBuffer = await offlineCtx.startRendering();
+        audioCtx.close();
+        
+        return audioBufferToWav(renderedBuffer);
+    }
+
+    // Convert AudioBuffer to standard WAV Blob format
+    function audioBufferToWav(buffer) {
+        const numOfChan = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const format = 1; // 1 = raw PCM
+        const bitDepth = 16;
+        
+        let result;
+        if (numOfChan === 2) {
+            result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+        } else {
+            result = buffer.getChannelData(0);
+        }
+        
+        const bufferArr = new ArrayBuffer(44 + result.length * 2);
+        const view = new DataView(bufferArr);
+        
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + result.length * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, format, true);
+        view.setUint16(22, numOfChan, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
+        view.setUint16(32, numOfChan * (bitDepth / 8), true);
+        view.setUint16(34, bitDepth, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, result.length * 2, true);
+        
+        floatTo16BitPCM(view, 44, result);
+        
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function interleave(inputL, inputR) {
+        const length = inputL.length + inputR.length;
+        const result = new Float32Array(length);
+        let index = 0;
+        let inputIndex = 0;
+        
+        while (index < length) {
+            result[index++] = inputL[inputIndex];
+            result[index++] = inputR[inputIndex];
+            inputIndex++;
+        }
+        return result;
+    }
+
+    function floatTo16BitPCM(output, offset, input) {
+        for (let i = 0; i < input.length; i++, offset += 2) {
+            let s = Math.max(-1, Math.min(1, input[i]));
+            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
     }
 
     // Helper: Convert Groq Whisper verbose_json to standard SRT subtitle string
