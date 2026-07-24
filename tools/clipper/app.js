@@ -19,11 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const resultsSection = document.getElementById('resultsSection');
     const placeholderState = document.getElementById('placeholderState');
+    const ytUrlInput = document.getElementById('ytUrlInput');
+    const ytAnalyzeBtn = document.getElementById('ytAnalyzeBtn');
 
     let parsedSubtitles = [];
     let detectedClips = [];
     let rawMediaFile = null; // Store media file for local playback slices
     let rawSrtContent = "";  // Store generated SRT content
+    let youtubeVideoId = ""; // Store YouTube ID if processing a YouTube link
 
     // Helper: Update progress bar status and text
     function updateProgress(percent, statusText) {
@@ -72,6 +75,103 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFile(e.target.files[0]);
         }
     });
+
+    // YouTube Link Handler
+    ytAnalyzeBtn.addEventListener('click', async () => {
+        const url = ytUrlInput.value.trim();
+        if (!url) {
+            alert("Please paste a valid YouTube URL.");
+            return;
+        }
+        
+        const videoId = extractYouTubeId(url);
+        if (!videoId) {
+            alert("Could not extract YouTube Video ID. Please check the URL format.");
+            return;
+        }
+        
+        // Reset state
+        parsedSubtitles = [];
+        detectedClips = [];
+        rawMediaFile = null;
+        rawSrtContent = "";
+        youtubeVideoId = videoId;
+        
+        setupSection.classList.add('hidden');
+        loadingSection.classList.remove('hidden');
+        placeholderState.classList.add('hidden');
+        resultsSection.innerHTML = '';
+        controlBar.classList.add('hidden');
+        
+        updateProgress(20, "Fetching YouTube video details...");
+        
+        try {
+            const subtitleUrl = await getYouTubeSubtitles(videoId);
+            updateProgress(50, "Fetching subtitle tracks...");
+            
+            const proxyUrl = 'https://api.allorigins.win/raw?url=';
+            const srtRes = await fetch(proxyUrl + encodeURIComponent(subtitleUrl + '&fmt=srt'));
+            if (!srtRes.ok) throw new Error("Failed to fetch YouTube subtitles track.");
+            
+            const srtContent = await srtRes.text();
+            if (!srtContent.trim()) throw new Error("Fetched subtitles content is empty.");
+            
+            rawSrtContent = srtContent;
+            parsedSubtitles = parseSRT(srtContent);
+            
+            if (parsedSubtitles.length === 0) {
+                throw new Error("Parsed subtitles list is empty.");
+            }
+            
+            updateProgress(80, "Analyzing segments with Llama AI...");
+            analyzeWithAI();
+        } catch (err) {
+            console.error("YouTube analysis failed:", err);
+            alert(`YouTube Analysis Failed: ${err.message}`);
+            
+            youtubeVideoId = "";
+            placeholderState.classList.remove('hidden');
+            loadingSection.classList.add('hidden');
+            setupSection.classList.remove('hidden');
+        }
+    });
+
+    function extractYouTubeId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    async function getYouTubeSubtitles(videoId) {
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        
+        const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        if (!response.ok) throw new Error("Failed to load YouTube page.");
+        
+        const html = await response.text();
+        const jsonMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+        if (!jsonMatch) {
+            const jsonMatch2 = html.match(/ytInitialPlayerResponse\s*=\s*({.+?})\s*<\/script>/);
+            if (!jsonMatch2) throw new Error("This YouTube video page layout is not supported or subtitles are restricted.");
+            return parseCaptions(JSON.parse(jsonMatch2[1]));
+        }
+        return parseCaptions(JSON.parse(jsonMatch[1]));
+    }
+
+    function parseCaptions(playerResponse) {
+        const captions = playerResponse.captions?.playerCaptionsTracklistRenderer;
+        if (!captions || !captions.captionTracks || captions.captionTracks.length === 0) {
+            throw new Error("This YouTube video does not have any captions/subtitles track enabled.");
+        }
+        
+        // Prioritize English, then Hindi, then first available
+        let track = captions.captionTracks.find(t => t.languageCode === 'en');
+        if (!track) track = captions.captionTracks.find(t => t.languageCode === 'hi');
+        if (!track) track = captions.captionTracks[0];
+        
+        return track.baseUrl;
+    }
 
     function handleFile(file) {
         const name = file.name.toLowerCase();
@@ -418,22 +518,35 @@ ${serializedSubs}
                 `;
             }
 
-            // Construct Media Slicer Player HTML if audio/video file is present
+            // Construct Media Slicer Player HTML if audio/video file or YouTube video is present
             let mediaSliceHtml = '';
-            if (rawMediaFile) {
-                const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
-                const objectUrl = URL.createObjectURL(rawMediaFile);
-                const rawStartSec = parseTimeToMs(startTime) / 1000;
-                const rawEndSec = parseTimeToMs(endTime) / 1000;
-                const startSec = Math.max(0, rawStartSec - 0.005);
-                const endSec = rawEndSec + 0.005;
+            const rawStartSec = parseTimeToMs(startTime) / 1000;
+            const rawEndSec = parseTimeToMs(endTime) / 1000;
+            const startSec = Math.max(0, rawStartSec - 0.005);
+            const endSec = rawEndSec + 0.005;
+
+            if (rawMediaFile || youtubeVideoId) {
+                let playerHtml = '';
+                if (youtubeVideoId) {
+                    playerHtml = `
+                        <iframe class="preview-media-element" id="media-player-${index}" 
+                            src="https://www.youtube.com/embed/${youtubeVideoId}?start=${Math.floor(startSec)}&end=${Math.ceil(endSec)}&autoplay=0&controls=1&rel=0" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    `;
+                } else {
+                    const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
+                    const objectUrl = URL.createObjectURL(rawMediaFile);
+                    playerHtml = isVideo ? 
+                        `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></video>` :
+                        `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></audio>`;
+                }
 
                 mediaSliceHtml = `
                     <div class="media-preview-container" id="preview-container-${index}">
-                        ${isVideo ? 
-                            `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></video>` :
-                            `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></audio>`
-                        }
+                        ${playerHtml}
                         <div class="slice-controls">
                             <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
                             <div>
@@ -445,10 +558,10 @@ ${serializedSubs}
                 `;
             }
 
-            card.className = `clip-card glass ${rawMediaFile ? '' : 'no-media'}`;
+            card.className = `clip-card glass ${(rawMediaFile || youtubeVideoId) ? '' : 'no-media'}`;
 
             // Left Column (Player & Controls)
-            const leftColHtml = rawMediaFile ? `
+            const leftColHtml = (rawMediaFile || youtubeVideoId) ? `
                 <div class="clip-card-left">
                     ${mediaSliceHtml}
                 </div>
@@ -641,6 +754,13 @@ ${serializedSubs}
         const player = document.getElementById(`media-player-${index}`);
         if (!player) return;
 
+        if (youtubeVideoId) {
+            // Reload YouTube iframe src to restart play
+            const currentSrc = player.src;
+            player.src = currentSrc;
+            return;
+        }
+
         // Clear any prior slice listeners to avoid callback accumulation
         if (player._stopHandler) {
             player.removeEventListener('timeupdate', player._stopHandler);
@@ -669,6 +789,14 @@ ${serializedSubs}
 
     // Slice downloader: Instant slicing for Audio, High-fidelity recording fallback for Video
     window.downloadSlice = async function(index, start, end, title) {
+        if (youtubeVideoId) {
+            alert("YouTube Clip Download:\n\n" +
+                  "Direct browser download is only supported for uploaded local files.\n\n" +
+                  "To edit this YouTube clip:\n" +
+                  "1. Click 'Export Timeline (EDL)' in the sidebar and import it into DaVinci Resolve or Premiere Pro to automatically cut the high-res source video.\n" +
+                  "2. Use a YouTube downloader to grab the source video file, then upload it here to enable instant browser downloads!");
+            return;
+        }
         const player = document.getElementById(`media-player-${index}`);
         if (!player) return;
 
@@ -893,9 +1021,11 @@ ${serializedSubs}
         detectedClips = [];
         rawMediaFile = null;
         rawSrtContent = "";
+        youtubeVideoId = "";
         
         fileInput.value = "";
         fileInfo.textContent = "";
+        ytUrlInput.value = "";
         
         resultsSection.innerHTML = `
             <div class="placeholder-state" id="placeholderState">

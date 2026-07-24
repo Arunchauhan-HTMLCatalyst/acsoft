@@ -53,6 +53,15 @@
                     <div class="file-info" id="fileInfo"></div>
                 </div>
                 <input type="file" id="fileInput" accept=".srt,.mp3,.wav,.m4a,.mp4,.mov,.webm" aria-label="Media File Input">
+
+                <div class="youtube-divider">
+                    <span>OR</span>
+                </div>
+                
+                <div class="youtube-zone">
+                    <input type="text" id="ytUrlInput" class="yt-input" placeholder="Paste YouTube Video URL (e.g., https://www.youtube.com/watch?v=...)" aria-label="YouTube URL Input">
+                    <button class="btn btn-primary" id="ytAnalyzeBtn">Analyze YouTube Link</button>
+                </div>
             </div>
         </section>
 
@@ -116,6 +125,6 @@
     </footer>
 
     <!-- App Script -->
-    <script src="app.js?v=1.25"></script>
+    <script src="app.js?v=1.26"></script>
 </body>
 </html>
