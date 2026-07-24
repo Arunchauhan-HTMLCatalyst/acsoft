@@ -595,8 +595,29 @@ ${serializedSubs}
             clip.startTime = startTime;
             clip.endTime = endTime;
 
-            // Calculate duration
-            const durationText = calculateDuration(startTime, endTime);
+            // Calculate raw duration in seconds
+            let rawDurationSec = 0;
+            try {
+                const s = parseTimeToMs(startTime);
+                const e = parseTimeToMs(endTime);
+                rawDurationSec = (e - s) / 1000;
+            } catch {}
+            
+            // Calculate optional filler/silence duration within this clip
+            let optionalDurationMs = 0;
+            const clipOptionalLines = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId && clip.optionalIds.includes(s.index));
+            clipOptionalLines.forEach(line => {
+                try {
+                    const lineStart = parseTimeToMs(line.start);
+                    const lineEnd = parseTimeToMs(line.end);
+                    optionalDurationMs += (lineEnd - lineStart);
+                } catch {}
+            });
+            const optionalDurationSec = optionalDurationMs / 1000;
+            const cutDurationSec = Math.max(0, rawDurationSec - optionalDurationSec);
+
+            const durationText = `${Math.round(rawDurationSec)}s`;
+            const cutDurationText = `${Math.round(cutDurationSec)}s`;
 
             // Dynamically reconstruct the lines list based on index range
             let linesHtml = '';
@@ -607,7 +628,7 @@ ${serializedSubs}
                     <div class="lines-container">
                         ${clipLines.map(line => {
                             const isEssential = clip.essentialIds.includes(line.index);
-                            const tag = isEssential ? 'ESSENTIAL' : 'OPTIONAL';
+                            const tag = isEssential ? 'ESSENTIAL' : 'TRIMMED';
                             return `
                                 <div class="line-row ${isEssential ? 'is-essential' : ''}">
                                     <span class="line-time">${formatTimeShort(line.start)}</span>
@@ -632,7 +653,8 @@ ${serializedSubs}
                                 <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
                                     ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
                                 </span>
-                                <span class="clip-duration">${durationText}</span>
+                                <span class="clip-duration">Raw: ${durationText}</span>
+                                <span class="clip-cut-duration">⚡ Cut: ${cutDurationText}</span>
                             </div>
                         </div>
                         <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>

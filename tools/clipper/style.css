@@ -528,7 +528,22 @@ body {
 
 .clip-duration {
     font-size: 0.78rem;
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.clip-cut-duration {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #00f2fe;
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.18);
+    padding: 3px 8px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.05);
 }
 
 .score-badge {
@@ -570,6 +585,25 @@ body {
     padding: 10px 12px;
     border-radius: 6px;
     font-size: 0.82rem;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: all 0.2s ease;
+}
+
+.line-row.is-essential {
+    background: rgba(16, 185, 129, 0.02);
+    border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+.line-row:not(.is-essential) {
+    background: rgba(239, 68, 68, 0.01);
+    border: 1px dashed rgba(239, 68, 68, 0.08);
+    opacity: 0.45;
+}
+
+.line-row:not(.is-essential) .line-text {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
 }
 
 @media (max-width: 600px) {
@@ -742,31 +776,7 @@ body {
     color: var(--color-accent);
 }
 
-/* Clip Card Side-by-Side Grid Layout (Left: Player, Right: Details) */
-.clip-card {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 30px;
-    align-items: start;
-}
 
-.clip-card.no-media {
-    grid-template-columns: 1fr;
-}
-
-.clip-card-left {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-}
-
-.clip-card-right {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 0;
-}
 
 /* Responsiveness for Clip Cards */
 @media (max-width: 900px) {
