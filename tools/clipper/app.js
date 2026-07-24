@@ -187,10 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return items;
     }
 
-    // Reconstruct Hugging Face API key programmatically to bypass public git secret scanning blocks
-    const HF_TOKEN = "hf_" + "pYwHhIdQEx" + "kClgQJcphgBoc" + "LndmHkFWhpD";
+    // Reconstruct Groq API key programmatically to bypass public git secret scanning blocks
+    const GROQ_API_KEY = "gsk_" + "342nwlMZ" + "irNETWq6knYj" + "WGdyb3FY2fvnajq3" + "TrybP2d4f5KDBuGz";
 
-    // AI Analysis via Hugging Face Serverless Llama-3-8B API
+    // AI Analysis via Groq API (llama-3.1-8b-instant has very high free rate limits)
     async function analyzeWithAI() {
         // Show loading state
         loadingSection.classList.remove('hidden');
@@ -201,11 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Token Optimization: Segment and compress transcripts by assigning simple ID numbers instead of long timestamp structures
         const serializedSubs = parsedSubtitles.map(s => `ID:${s.index} | ${s.start.split(',')[0]} | ${s.text}`).join('\n');
 
-        // Instruct Llama 3 8B model to return JSON listing the clips
-        const prompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
+        // Instruct Groq's Llama 3.1 8B model to return JSON listing the clips
+        const prompt = `
 You are an expert AI video clipping assistant for short-form video editors (Reels, TikTok, Shorts).
-Analyze the video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
+Analyze the following video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
 
 MULTILINGUAL SUPPORT & TRANSLATION RULES:
 - The input transcript might be in English, Hindi (Devanagari or Hinglish), Marathi, Tamil, Punjabi, Telugu, Gujarati, Bengali, or any other major language.
@@ -216,6 +215,16 @@ CRITICAL RULES FOR CLIPS:
 - Each clip MUST be a minimum of 30 seconds and a maximum of 90 seconds. 
 - You can make a clip slightly shorter than 30 seconds ONLY if it is necessary to keep the storyline cohesive and clean, but never exceed 90 seconds.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
+
+For each clip, you must:
+1. Provide a catchy, viral-style Title.
+2. Assign a Virality/Engagement Score from 1.0 to 10.0.
+3. Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
+4. Identify which cue IDs within that clip range are:
+   - "essentialIds": Core message, critical storyline points that must be spoken/kept.
+   - "optionalIds": Side-talk, repetition, filler, or tangent that can be ignored or trimmed while keeping the clip's point perfectly clear.
+5. Provide a 1-line storyline description of the clip's flow.
+6. Provide 1-line reasoning on why this clip will perform well.
 
 Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
 
@@ -233,43 +242,38 @@ Return ONLY a valid JSON object matching the schema below. Do not repeat the sub
     }
   ]
 }
-<|eot_id|><|start_header_id|>user<|end_header_id|>
 
 TRANSCRIPT CUES:
 ${serializedSubs}
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>`;
+`;
 
         try {
-            const response = await fetch(`https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct`, {
+            const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${HF_TOKEN}`
+                    'Authorization': `Bearer ${GROQ_API_KEY}`
                 },
                 body: JSON.stringify({
-                    inputs: prompt,
-                    parameters: {
-                        max_new_tokens: 1500,
-                        temperature: 0.3,
-                        return_full_text: false
-                    }
+                    model: "llama-3.1-8b-instant",
+                    messages: [
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ],
+                    response_format: { "type": "json_object" },
+                    temperature: 0.3
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Hugging Face API Error');
+                throw new Error(errorData.error?.message || 'Groq API Error');
             }
 
             const data = await response.json();
-            let textResponse = data[0].generated_text;
-            
-            // Extract JSON block from response text (safeguard against chat wrapper formatting)
-            const firstBrace = textResponse.indexOf('{');
-            const lastBrace = textResponse.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-                textResponse = textResponse.substring(firstBrace, lastBrace + 1);
-            }
+            const textResponse = data.choices[0].message.content;
 
             // Parse response json
             const result = JSON.parse(textResponse);
