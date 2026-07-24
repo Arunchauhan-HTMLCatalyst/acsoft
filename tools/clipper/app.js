@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const resultsSection = document.getElementById('resultsSection');
     const placeholderState = document.getElementById('placeholderState');
+    const edlFilenameInput = document.getElementById('edlFilenameInput');
 
     let parsedSubtitles = [];
     let detectedClips = [];
@@ -101,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fileInfo.textContent = `Selected: ${file.name} (${sizeMB.toFixed(1)} MB)`;
         rawMediaFile = (isAudio || isVideo) ? file : null;
+        if (edlFilenameInput) {
+            edlFilenameInput.value = file.name;
+        }
 
         if (isSrt) {
             // Process SRT directly
@@ -874,7 +878,7 @@ ${serializedSubs}
 
         let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
 
-        const fileName = rawMediaFile ? rawMediaFile.name : "source_video.mp4";
+        const fileName = (edlFilenameInput && edlFilenameInput.value.trim()) ? edlFilenameInput.value.trim() : (rawMediaFile ? rawMediaFile.name : "source_video.mp4");
         const tapeName = fileName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8).toUpperCase() || "SOURCE";
 
         detectedClips.forEach((clip, index) => {
@@ -948,6 +952,9 @@ ${serializedSubs}
         
         fileInput.value = "";
         fileInfo.textContent = "";
+        if (edlFilenameInput) {
+            edlFilenameInput.value = "source.mp4";
+        }
         
         resultsSection.innerHTML = `
             <div class="placeholder-state" id="placeholderState">
