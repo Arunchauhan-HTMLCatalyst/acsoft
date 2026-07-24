@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Instruct Groq's Llama 3.1 8B model to return JSON listing the clips
         const prompt = `
 You are an expert AI video clipping assistant for short-form video editors (Reels, TikTok, Shorts).
-Analyze the following video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
+Identify 4 to 15 highly engaging, hook-worthy short-form clips. If the transcript is short or you cannot find many clips, find at least 4 clips (by dividing the video into 4 sequential chapters/segments).
 
 MULTILINGUAL SUPPORT & TRANSLATION RULES:
 - The input transcript might be in English, Hindi (Devanagari or Hinglish), Marathi, Tamil, Punjabi, Telugu, Gujarati, Bengali, or any other major language.
@@ -427,7 +427,7 @@ MULTILINGUAL SUPPORT & TRANSLATION RULES:
 - Crucially, the returned JSON fields "title", "storyline", and "reasoning" MUST ALWAYS be written in clear, fluent, professional English (no mixing or local scripts), regardless of the input transcript language.
 
 CRITICAL RULES FOR CLIPS:
-- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds!
+- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds (such as 15s, 20s, 30s, or 35s clips are strictly forbidden). Double-check the timestamps of your startId and endId. If your selected range is less than 40 seconds, you MUST expand the endId further down the transcript to cover at least 40 seconds of content.
 - Do not skip or mark lines as optional in the middle of a sentence or a cohesive paragraph. Keep the "optionalIds" array extremely minimal (typically 0 to 2 cues per clip max). Mark only actual silence, repetitive stutters, or redundant filler words as optional, ensuring the clip flows continuously without confusing jumps.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
 - HOOK-CENTRIC START CUE REQUIREMENT: Every clip's start cue MUST represent the beginning of a clean, coherent sentence, a new thought, or a key question.
@@ -495,6 +495,36 @@ ${serializedSubs}
             // Parse response json
             const result = JSON.parse(textResponse);
             detectedClips = result.clips || [];
+
+            // Fail-safe guardrail: Ensure each clip's duration is strictly 40s to 100s, auto-expanding short clips
+            detectedClips.forEach(clip => {
+                let startCue = parsedSubtitles.find(s => s.index === clip.startId);
+                let endCue = parsedSubtitles.find(s => s.index === clip.endId);
+                if (!startCue || !endCue) return;
+                
+                let duration = (parseTimeToMs(endCue.end) - parseTimeToMs(startCue.start)) / 1000;
+                // If duration is too short, automatically extend endId
+                if (duration < 40) {
+                    let currentEndIndex = parsedSubtitles.findIndex(s => s.index === clip.endId);
+                    while (duration < 40 && currentEndIndex < parsedSubtitles.length - 1) {
+                        currentEndIndex++;
+                        const nextEndCue = parsedSubtitles[currentEndIndex];
+                        clip.endId = nextEndCue.index;
+                        duration = (parseTimeToMs(nextEndCue.end) - parseTimeToMs(startCue.start)) / 1000;
+                        if (duration > 100) {
+                            break; // Don't exceed max 100s
+                        }
+                    }
+                    console.log(`Guardrail: Clip "${clip.title}" auto-expanded to ${duration.toFixed(1)}s`);
+                }
+                
+                // Double-check essentialIds matching the new expanded range
+                const expandedIds = [];
+                for (let idx = clip.startId; idx <= clip.endId; idx++) {
+                    expandedIds.push(idx);
+                }
+                clip.essentialIds = expandedIds.filter(id => !clip.optionalIds.includes(id));
+            });
 
             if (detectedClips.length === 0) {
                 throw new Error("No clips returned from AI analyzer. Check the transcript content.");
