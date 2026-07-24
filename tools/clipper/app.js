@@ -192,8 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return items;
     }
 
-    // Reconstruct Groq API key programmatically to bypass public git secret scanning blocks
-    const GROQ_API_KEY = "gsk_" + "342nwlMZ" + "irNETWq6knYj" + "WGdyb3FY2fvnajq3" + "TrybP2d4f5KDBuGz";
+
 
     // AI Analysis via Groq API (llama-3.1-8b-instant has very high free rate limits)
     async function analyzeWithAI() {
