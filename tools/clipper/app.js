@@ -153,6 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', fileToSend, 'audio.wav');
         formData.append('model', 'whisper-large-v3-turbo');
         formData.append('response_format', 'verbose_json');
+        formData.append('timestamp_granularities[]', 'word');
+        formData.append('timestamp_granularities[]', 'segment');
 
         try {
             const jsonData = await new Promise((resolve, reject) => {
@@ -192,9 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             updateProgress(85, "Transcribing Audio... (Running Whisper AI)");
-            const srtContent = convertVerboseJsonToSRT(jsonData);
-            rawSrtContent = srtContent;
-            parsedSubtitles = parseSRT(srtContent);
+            parsedSubtitles = chunkWhisperWords(jsonData);
+            rawSrtContent = generateSrtFromSubtitles(parsedSubtitles);
             
             if (parsedSubtitles.length === 0) {
                 throw new Error("Whisper transcription did not generate valid subtitles. Try again with a different format.");
@@ -213,35 +214,159 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // SRT Parser Logic
+    // SRT Parser Logic (Automatically chunks segments to max 24 characters on a single line)
     function parseSRT(data) {
         const items = [];
-        // Normalize line endings
         const cleaned = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const blocks = cleaned.split('\n\n');
+        let segmentIndex = 1;
 
         blocks.forEach(block => {
             const lines = block.trim().split('\n');
             if (lines.length >= 3) {
-                const index = parseInt(lines[0], 10);
                 const timeLine = lines[1];
-                const text = lines.slice(2).join(' ');
+                const text = lines.slice(2).join(' ').replace(/<[^>]*>/g, ''); // remove html tags
 
                 if (timeLine && timeLine.includes('-->')) {
                     const parts = timeLine.split('-->');
-                    const start = parts[0].trim();
-                    const end = parts[1].trim();
-
-                    items.push({
-                        index,
-                        start,
-                        end,
-                        text: text.replace(/<[^>]*>/g, '') // remove HTML tags if any
+                    const startSec = parseTimeToMs(parts[0].trim()) / 1000;
+                    const endSec = parseTimeToMs(parts[1].trim()) / 1000;
+                    
+                    const textWords = text.trim().split(/\s+/).filter(w => w.length > 0);
+                    if (textWords.length === 0) return;
+                    
+                    const wordDuration = (endSec - startSec) / textWords.length;
+                    const wordsWithTime = textWords.map((word, idx) => ({
+                        word: word,
+                        start: startSec + idx * wordDuration,
+                        end: startSec + (idx + 1) * wordDuration
+                    }));
+                    
+                    let currentSegmentWords = [];
+                    let currentLength = 0;
+                    
+                    wordsWithTime.forEach(wordObj => {
+                        const wordText = wordObj.word;
+                        const spaceNeeded = currentSegmentWords.length > 0 ? 1 : 0;
+                        
+                        if (currentLength + spaceNeeded + wordText.length > 24 && currentSegmentWords.length > 0) {
+                            const segStart = currentSegmentWords[0].start;
+                            const segEnd = currentSegmentWords[currentSegmentWords.length - 1].end;
+                            items.push({
+                                index: segmentIndex++,
+                                start: formatSecondsToSRTTime(segStart),
+                                end: formatSecondsToSRTTime(segEnd),
+                                text: currentSegmentWords.map(w => w.word).join(' '),
+                                words: currentSegmentWords
+                            });
+                            currentSegmentWords = [wordObj];
+                            currentLength = wordText.length;
+                        } else {
+                            currentSegmentWords.push(wordObj);
+                            currentLength += spaceNeeded + wordText.length;
+                        }
                     });
+                    
+                    if (currentSegmentWords.length > 0) {
+                        const segStart = currentSegmentWords[0].start;
+                        const segEnd = currentSegmentWords[currentSegmentWords.length - 1].end;
+                        items.push({
+                            index: segmentIndex++,
+                            start: formatSecondsToSRTTime(segStart),
+                            end: formatSecondsToSRTTime(segEnd),
+                            text: currentSegmentWords.map(w => w.word).join(' '),
+                            words: currentSegmentWords
+                        });
+                    }
                 }
             }
         });
         return items;
+    }
+
+    // Subtitle chunker: Groups words into segments of max 24 characters on a single line
+    function chunkWhisperWords(verboseJson) {
+        let allWords = [];
+        
+        // Gather all words from all segments (if they have word timestamps)
+        if (verboseJson.segments && verboseJson.segments.length > 0) {
+            verboseJson.segments.forEach(seg => {
+                if (seg.words && seg.words.length > 0) {
+                    allWords = allWords.concat(seg.words);
+                } else {
+                    // Fallback if no word-level timestamps returned
+                    const textWords = seg.text.trim().split(/\s+/).filter(w => w.length > 0);
+                    if (textWords.length > 0) {
+                        const segStart = seg.start;
+                        const segEnd = seg.end;
+                        const wordDuration = (segEnd - segStart) / textWords.length;
+                        textWords.forEach((word, index) => {
+                            allWords.push({
+                                word: word,
+                                start: segStart + index * wordDuration,
+                                end: segStart + (index + 1) * wordDuration
+                            });
+                        });
+                    }
+                }
+            });
+        }
+        
+        if (allWords.length === 0) return [];
+        
+        const optimizedSegments = [];
+        let currentSegmentWords = [];
+        let currentTextLength = 0;
+        let segmentIndex = 1;
+        
+        allWords.forEach(wordObj => {
+            const wordText = wordObj.word.trim();
+            if (wordText.length === 0) return;
+            
+            const wordLength = wordText.length;
+            const spaceNeeded = currentSegmentWords.length > 0 ? 1 : 0;
+            
+            if (currentTextLength + spaceNeeded + wordLength > 24 && currentSegmentWords.length > 0) {
+                const segStart = currentSegmentWords[0].start;
+                const segEnd = currentSegmentWords[currentSegmentWords.length - 1].end;
+                const segText = currentSegmentWords.map(w => w.word.trim()).join(' ');
+                
+                optimizedSegments.push({
+                    index: segmentIndex++,
+                    start: formatSecondsToSRTTime(segStart),
+                    end: formatSecondsToSRTTime(segEnd),
+                    text: segText,
+                    words: currentSegmentWords
+                });
+                
+                currentSegmentWords = [wordObj];
+                currentTextLength = wordLength;
+            } else {
+                currentSegmentWords.push(wordObj);
+                currentTextLength += spaceNeeded + wordLength;
+            }
+        });
+        
+        if (currentSegmentWords.length > 0) {
+            const segStart = currentSegmentWords[0].start;
+            const segEnd = currentSegmentWords[currentSegmentWords.length - 1].end;
+            const segText = currentSegmentWords.map(w => w.word.trim()).join(' ');
+            optimizedSegments.push({
+                index: segmentIndex++,
+                start: formatSecondsToSRTTime(segStart),
+                end: formatSecondsToSRTTime(segEnd),
+                text: segText,
+                words: currentSegmentWords
+            });
+        }
+        
+        return optimizedSegments;
+    }
+
+    function generateSrtFromSubtitles(subs) {
+        return subs.map(s => {
+            return `${s.index}\n${s.start} --> ${s.end}\n${s.text}`;
+        }).join('\n\n');
     }
 
 
@@ -421,8 +546,10 @@ ${serializedSubs}
             if (rawMediaFile) {
                 const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
                 const objectUrl = URL.createObjectURL(rawMediaFile);
-                const startSec = parseTimeToMs(startTime) / 1000;
-                const endSec = parseTimeToMs(endTime) / 1000;
+                const rawStartSec = parseTimeToMs(startTime) / 1000;
+                const rawEndSec = parseTimeToMs(endTime) / 1000;
+                const startSec = Math.max(0, rawStartSec - 0.005);
+                const endSec = rawEndSec + 0.005;
 
                 mediaSliceHtml = `
                     <div class="media-preview-container" id="preview-container-${index}">
@@ -469,6 +596,15 @@ ${serializedSubs}
                                 <option value="hormozi">🔥 Hormozi Bold</option>
                                 <option value="cyber">⚡ Neon Cyberpunk</option>
                                 <option value="minimal">⚪ Clean Minimal</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <label>Font Family:</label>
+                            <select class="style-select" id="caption-font-${index}" onchange="changeCaptionFont(${index}, this.value)">
+                                <option value="'Plus Jakarta Sans', sans-serif">Jakarta Bold</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Impact', 'Arial Black', sans-serif">Impact Bold</option>
+                                <option value="'Courier New', monospace">Monospace</option>
                             </select>
                         </div>
                     </div>
@@ -574,11 +710,29 @@ ${serializedSubs}
                                 const duration = end - start;
                                 const elapsed = curTime - start;
                                 
-                                const words = activeCue.text.split(/\s+/).filter(w => w.length > 0);
-                                const activeWordIndex = Math.floor((elapsed / (duration || 1)) * words.length);
+                                let activeWordIndex = -1;
+                                const wordsList = activeCue.words || [];
                                 
-                                overlay.innerHTML = words.map((word, wIdx) => {
-                                    const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
+                                if (wordsList.length > 0 && typeof wordsList[0].start === 'number') {
+                                    // Exact word-level matching!
+                                    activeWordIndex = wordsList.findIndex(w => curTime >= w.start && curTime <= w.end);
+                                    if (activeWordIndex === -1) {
+                                        activeWordIndex = wordsList.findIndex(w => curTime < w.start);
+                                        if (activeWordIndex === -1) {
+                                            activeWordIndex = wordsList.length - 1;
+                                        } else {
+                                            activeWordIndex = Math.max(0, activeWordIndex - 1);
+                                        }
+                                    }
+                                } else {
+                                    // Fallback to uniform duration spacing
+                                    const textWords = activeCue.text.split(/\s+/).filter(w => w.length > 0);
+                                    activeWordIndex = Math.floor((elapsed / (duration || 1)) * textWords.length);
+                                }
+                                
+                                const rawWords = activeCue.text.split(/\s+/).filter(w => w.length > 0);
+                                overlay.innerHTML = rawWords.map((word, wIdx) => {
+                                    const isActive = wIdx === Math.min(activeWordIndex, rawWords.length - 1);
                                     const wordWithEmoji = processWordEmoji(word);
                                     return `<span class="word ${isActive ? 'active' : ''}">${wordWithEmoji}</span>`;
                                 }).join(' ');
@@ -1010,6 +1164,7 @@ ${serializedSubs}
     // Canvas Subtitles composition renderer (styled and highlighted frame by frame)
     function drawCanvasSubtitles(index, ctx, width, height, curTime) {
         const styleName = document.getElementById(`caption-style-${index}`)?.value || 'hormozi';
+        const fontValue = document.getElementById(`caption-font-${index}`)?.value || "'Plus Jakarta Sans', sans-serif";
         const clip = detectedClips[index];
         const clipCues = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId);
         
@@ -1026,15 +1181,32 @@ ${serializedSubs}
         const duration = end - start;
         const elapsed = curTime - start;
         
+        let activeWordIndex = -1;
+        const wordsList = activeCue.words || [];
+        
+        if (wordsList.length > 0 && typeof wordsList[0].start === 'number') {
+            activeWordIndex = wordsList.findIndex(w => curTime >= w.start && curTime <= w.end);
+            if (activeWordIndex === -1) {
+                activeWordIndex = wordsList.findIndex(w => curTime < w.start);
+                if (activeWordIndex === -1) {
+                    activeWordIndex = wordsList.length - 1;
+                } else {
+                    activeWordIndex = Math.max(0, activeWordIndex - 1);
+                }
+            }
+        } else {
+            const textWords = activeCue.text.split(/\s+/).filter(w => w.length > 0);
+            activeWordIndex = Math.floor((elapsed / (duration || 1)) * textWords.length);
+        }
+        
         const rawWords = activeCue.text.split(/\s+/).filter(w => w.length > 0);
         const words = rawWords.map(w => processWordEmoji(w));
-        const activeWordIndex = Math.floor((elapsed / (duration || 1)) * words.length);
         
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
         if (styleName === 'hormozi') {
-            ctx.font = '800 36px "Plus Jakarta Sans", "Inter", sans-serif';
+            ctx.font = `800 36px ${fontValue}`;
             const textY = height * 0.75;
             
             const wordWidths = words.map(w => ctx.measureText(w).width);
@@ -1055,7 +1227,7 @@ ${serializedSubs}
                 currentX += wordWidths[wIdx] + spacing;
             });
         } else if (styleName === 'cyber') {
-            ctx.font = '800 32px monospace';
+            ctx.font = `800 32px ${fontValue}`;
             const textY = height * 0.75;
             
             const wordWidths = words.map(w => ctx.measureText(w).width);
@@ -1072,7 +1244,7 @@ ${serializedSubs}
                 currentX += wordWidths[wIdx] + spacing;
             });
         } else { // minimal
-            ctx.font = '500 24px "Inter", sans-serif';
+            ctx.font = `500 24px ${fontValue}`;
             const textY = height * 0.82;
             
             const wordWidths = words.map(w => ctx.measureText(w).width);
@@ -1218,6 +1390,14 @@ ${serializedSubs}
         if (!overlay) return;
         
         overlay.className = `captions-overlay style-${styleName}`;
+    };
+
+    // Vizard AI Font Family Selector
+    window.changeCaptionFont = function(index, fontValue) {
+        const overlay = document.getElementById(`captions-overlay-${index}`);
+        if (overlay) {
+            overlay.style.fontFamily = fontValue;
+        }
     };
 
     // Vizard AI Smart Cut Toggle
