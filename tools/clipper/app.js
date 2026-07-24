@@ -419,12 +419,8 @@ ${serializedSubs}
                 mediaSliceHtml = `
                     <div class="media-preview-container">
                         ${isVideo ? 
-                            `<video class="preview-media-element" id="media-player-${index}" preload="metadata">
-                                <source src="${objectUrl}" type="${rawMediaFile.type}">
-                             </video>` :
-                            `<audio class="preview-media-element" id="media-player-${index}" preload="metadata">
-                                <source src="${objectUrl}" type="${rawMediaFile.type}">
-                             </audio>`
+                            `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}" preload="metadata" controls></video>` :
+                            `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}" preload="metadata" controls></audio>`
                         }
                         <div class="slice-controls">
                             <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
@@ -621,17 +617,30 @@ ${serializedSubs}
         const player = document.getElementById(`media-player-${index}`);
         if (!player) return;
 
-        player.currentTime = start;
-        player.play();
+        // Clear any prior slice listeners to avoid callback accumulation
+        if (player._stopHandler) {
+            player.removeEventListener('timeupdate', player._stopHandler);
+        }
 
-        // Listen for time updates and pause when slice ends
+        player.currentTime = start;
+
         const stopOnTimeLimit = () => {
             if (player.currentTime >= end) {
                 player.pause();
                 player.removeEventListener('timeupdate', stopOnTimeLimit);
+                player._stopHandler = null;
             }
         };
+
+        player._stopHandler = stopOnTimeLimit;
         player.addEventListener('timeupdate', stopOnTimeLimit);
+
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.error("Playback failed:", error);
+            });
+        }
     };
 
     // Slice downloader using MediaRecorder (Record locally directly in browser without server)
