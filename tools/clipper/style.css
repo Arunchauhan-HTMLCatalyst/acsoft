@@ -775,3 +775,194 @@ body {
         gap: 20px;
     }
 }
+
+/* Vizard AI Style Subtitles and Layout Customizer */
+.media-preview-container {
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 9:16 Vertical Shorts Mode */
+.media-preview-container.vertical-shorts {
+    aspect-ratio: 9/16;
+    max-height: 480px;
+    width: 270px;
+    margin: 0 auto;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 20px rgba(50, 204, 202, 0.15);
+}
+
+.media-preview-container.vertical-shorts .preview-media-element {
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    transform: scale(1.0);
+    transition: transform 0.2s ease;
+}
+
+/* Captions Overlay Box */
+.captions-overlay {
+    position: absolute;
+    bottom: 25%;
+    left: 5%;
+    width: 90%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 15;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: opacity 0.2s ease;
+}
+
+/* Caption Styles */
+.captions-overlay.style-hormozi .word {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #fff;
+    text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000;
+}
+
+.captions-overlay.style-hormozi .word.active {
+    color: #facc15; /* Bright Yellow */
+    transform: scale(1.2);
+    display: inline-block;
+    animation: popWord 0.15s ease-out;
+}
+
+.captions-overlay.style-cyber .word {
+    font-family: monospace;
+    color: #00f2fe;
+    text-shadow: 0 0 8px rgba(0, 242, 254, 0.6);
+}
+
+.captions-overlay.style-cyber .word.active {
+    color: #ff007f;
+    text-shadow: 0 0 12px rgba(255, 0, 127, 0.9);
+    transform: rotate(-3deg);
+}
+
+.captions-overlay.style-minimal {
+    bottom: 12%;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 8px 16px;
+    border-radius: 20px;
+    width: 80%;
+    left: 10%;
+    font-size: 0.95rem;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.captions-overlay.style-minimal .word {
+    color: #d1d5db;
+}
+
+.captions-overlay.style-minimal .word.active {
+    color: #fff;
+    font-weight: 700;
+}
+
+@keyframes popWord {
+    0% { transform: scale(1.0); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1.2); }
+}
+
+/* Vizard Control Panel Style */
+.vizard-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.vizard-controls .control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.vizard-controls label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.vizard-controls .btn-group {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+}
+
+.vizard-controls .btn-toggle {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.vizard-controls .btn-toggle.active {
+    background: var(--color-accent);
+    color: #000;
+}
+
+.vizard-controls .reframe-slider {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.vizard-controls .reframe-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+}
+
+.vizard-controls .style-select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+}
+
+.vizard-controls .style-select:focus {
+    border-color: var(--color-accent);
+}

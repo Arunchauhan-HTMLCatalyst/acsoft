@@ -425,17 +425,41 @@ ${serializedSubs}
                 const endSec = parseTimeToMs(endTime) / 1000;
 
                 mediaSliceHtml = `
-                    <div class="media-preview-container">
+                    <div class="media-preview-container" id="preview-container-${index}">
                         ${isVideo ? 
                             `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></video>` :
                             `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></audio>`
                         }
+                        <div class="captions-overlay style-hormozi" id="captions-overlay-${index}"></div>
                         <div class="slice-controls">
                             <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
                             <div>
                                 <button class="btn-slice-action" onclick="playSlice(${index}, ${startSec}, ${endSec})">▶ Play Clip</button>
                                 <button class="btn-slice-action" style="margin-left: 6px; background: rgba(50, 204, 202, 0.05);" onclick="downloadSlice(${index}, ${startSec}, ${endSec}, '${clip.title.replace(/'/g, "\\'")}')">💾 Download Clip</button>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vizard AI Style Controls -->
+                    <div class="vizard-controls">
+                        <div class="control-row">
+                            <label>Layout Mode:</label>
+                            <div class="btn-group">
+                                <button class="btn-toggle active" id="btn-16-9-${index}" onclick="toggleLayoutMode(${index}, '16:9')">16:9 Landscape</button>
+                                <button class="btn-toggle" id="btn-9-16-${index}" onclick="toggleLayoutMode(${index}, '9:16')">9:16 Shorts</button>
+                            </div>
+                        </div>
+                        <div class="control-row hidden" id="reframe-row-${index}">
+                            <label>Reframe Focus:</label>
+                            <input type="range" min="-100" max="100" value="0" class="reframe-slider" id="reframe-slider-${index}" oninput="adjustReframe(${index}, this.value)">
+                        </div>
+                        <div class="control-row">
+                            <label>Caption Style:</label>
+                            <select class="style-select" id="caption-style-${index}" onchange="changeCaptionStyle(${index}, this.value)">
+                                <option value="hormozi">🔥 Hormozi Bold</option>
+                                <option value="cyber">⚡ Neon Cyberpunk</option>
+                                <option value="minimal">⚪ Clean Minimal</option>
+                            </select>
                         </div>
                     </div>
                 `;
@@ -483,6 +507,48 @@ ${serializedSubs}
 
             card.innerHTML = rawMediaFile ? (leftColHtml + rightColHtml) : rightColHtml;
             resultsSection.appendChild(card);
+
+            // Bind subtitle sync to player timeupdate events for real-time styled captions (Vizard AI style)
+            if (rawMediaFile) {
+                setTimeout(() => {
+                    const player = document.getElementById(`media-player-${index}`);
+                    const overlay = document.getElementById(`captions-overlay-${index}`);
+                    
+                    if (player && overlay) {
+                        // Gather subtitle cues within this clip's boundaries
+                        const clipCues = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId);
+                        
+                        player.addEventListener('timeupdate', () => {
+                            const curTime = player.currentTime;
+                            
+                            // Check if current playhead matches any subtitle time boundary
+                            const activeCue = clipCues.find(cue => {
+                                const start = parseTimeToMs(cue.start) / 1000;
+                                const end = parseTimeToMs(cue.end) / 1000;
+                                return curTime >= start && curTime <= end;
+                            });
+                            
+                            if (activeCue) {
+                                const start = parseTimeToMs(activeCue.start) / 1000;
+                                const end = parseTimeToMs(activeCue.end) / 1000;
+                                const duration = end - start;
+                                const elapsed = curTime - start;
+                                
+                                const words = activeCue.text.split(/\s+/).filter(w => w.length > 0);
+                                const activeWordIndex = Math.floor((elapsed / (duration || 1)) * words.length);
+                                
+                                overlay.innerHTML = words.map((word, wIdx) => {
+                                    const isActive = wIdx === Math.min(activeWordIndex, words.length - 1);
+                                    return `<span class="word ${isActive ? 'active' : ''}">${word}</span>`;
+                                }).join(' ');
+                                overlay.style.opacity = 1;
+                            } else {
+                                overlay.style.opacity = 0;
+                            }
+                        });
+                    }
+                }, 100);
+            }
         });
     }
 
@@ -876,6 +942,48 @@ ${serializedSubs}
         link.click();
         document.body.removeChild(link);
     });
+
+    // Vizard AI Layout Toggle
+    window.toggleLayoutMode = function(index, mode) {
+        const container = document.getElementById(`preview-container-${index}`);
+        const reframeRow = document.getElementById(`reframe-row-${index}`);
+        const btn169 = document.getElementById(`btn-16-9-${index}`);
+        const btn916 = document.getElementById(`btn-9-16-${index}`);
+        
+        if (!container) return;
+
+        if (mode === '9:16') {
+            container.classList.add('vertical-shorts');
+            if (reframeRow) reframeRow.classList.remove('hidden');
+            if (btn916) btn916.classList.add('active');
+            if (btn169) btn169.classList.remove('active');
+        } else {
+            container.classList.remove('vertical-shorts');
+            if (reframeRow) reframeRow.classList.add('hidden');
+            if (btn169) btn169.classList.add('active');
+            if (btn916) btn916.classList.remove('active');
+            
+            // Reset object position when returning to landscape
+            const player = document.getElementById(`media-player-${index}`);
+            if (player) player.style.objectPosition = '50% 50%';
+        }
+    };
+
+    // Vizard AI Reframe slider handler
+    window.adjustReframe = function(index, value) {
+        const player = document.getElementById(`media-player-${index}`);
+        if (!player) return;
+        
+        player.style.objectPosition = `calc(50% + ${value}px) 50%`;
+    };
+
+    // Vizard AI Caption Style selector
+    window.changeCaptionStyle = function(index, styleName) {
+        const overlay = document.getElementById(`captions-overlay-${index}`);
+        if (!overlay) return;
+        
+        overlay.className = `captions-overlay style-${styleName}`;
+    };
 
     // Reset/Clear button listener to bring back the upload card
     resetBtn.addEventListener('click', () => {
