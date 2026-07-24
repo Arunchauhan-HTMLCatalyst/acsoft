@@ -889,7 +889,8 @@ ${serializedSubs}
         let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
 
         const fileName = (edlFilenameInput && edlFilenameInput.value.trim()) ? edlFilenameInput.value.trim() : (rawMediaFile ? rawMediaFile.name : "source_video.mp4");
-        const tapeName = fileName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8).toUpperCase() || "SOURCE";
+        // Always use 'AX' as the standard tape name to prevent missing media offline warnings in Premiere/Resolve
+        const tapeName = "AX";
 
         detectedClips.forEach((clip, index) => {
             const clipNumStr = String(index + 1).padStart(3, '0');
@@ -898,10 +899,10 @@ ${serializedSubs}
             const edlStart = srtTimeToEDLTime(clip.startTime);
             const edlEnd = srtTimeToEDLTime(clip.endTime);
 
-            // CMX 3600 EDL edits with actual tape name and file descriptors for Premiere/Resolve auto-linking
-            edlContent += `${clipNumStr}  ${tapeName.padEnd(8, ' ')} V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
+            // Use AX as tape name and reference fileName in FROM FILE and FROM CLIP for seamless auto-linking
+            edlContent += `${clipNumStr}  AX       V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
             edlContent += `* FROM FILE: ${fileName}\n`;
-            edlContent += `* FROM CLIP: ${clip.title.toUpperCase()}\n\n`;
+            edlContent += `* FROM CLIP: ${fileName}\n\n`;
         });
 
         const blob = new Blob([edlContent], { type: 'text/plain' });
