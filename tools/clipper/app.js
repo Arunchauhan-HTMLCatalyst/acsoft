@@ -197,9 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsSection.innerHTML = '';
         controlBar.classList.add('hidden');
 
-        // Segment subtitles into smaller chunks if transcript is huge,
-        // but for general clips analysis, we send a compressed list of cues.
-        const serializedSubs = parsedSubtitles.map(s => `[${s.start} -> ${s.end}] ${s.text}`).join('\n');
+        // Token Optimization: Segment and compress transcripts by assigning simple ID numbers instead of long timestamp structures
+        const serializedSubs = parsedSubtitles.map(s => `ID:${s.index} | ${s.start.split(',')[0]} | ${s.text}`).join('\n');
 
         // Instruct Groq's Llama 3.3 70B model to return JSON listing the clips
         const prompt = `
@@ -214,37 +213,26 @@ CRITICAL RULES FOR CLIPS:
 For each clip, you must:
 1. Provide a catchy, viral-style Title.
 2. Assign a Virality/Engagement Score from 1.0 to 10.0.
-3. Define the precise start timestamp and end timestamp of the clip based on the transcript cues (choose cues that naturally form a complete clip).
-4. Extract all subtitle lines within that clip window.
-5. Analyze each line within the clip and tag it as either:
-   - "ESSENTIAL": Core message, critical storyline point that must be spoken/kept.
-   - "OPTIONAL": Side-talk, repetition, filler, or tangent that can be ignored or trimmed while keeping the clip's point perfectly clear.
-6. Provide a 1-line storyline description of the clip's flow.
-7. Provide 1-line reasoning on why this clip will perform well.
+3. Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
+4. Identify which cue IDs within that clip range are:
+   - "essentialIds": Core message, critical storyline points that must be spoken/kept.
+   - "optionalIds": Side-talk, repetition, filler, or tangent that can be ignored or trimmed while keeping the clip's point perfectly clear.
+5. Provide a 1-line storyline description of the clip's flow.
+6. Provide 1-line reasoning on why this clip will perform well.
 
-Return ONLY a valid JSON object matching the schema below. No markdown formatting blocks, no extra text, just the raw JSON:
+Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
 
 {
   "clips": [
     {
       "title": "Clip Title Here",
       "score": 9.2,
-      "startTime": "00:01:59,000",
-      "endTime": "00:02:35,000",
+      "startId": 12,
+      "endId": 25,
+      "essentialIds": [12, 13, 14, 16, 17],
+      "optionalIds": [15],
       "storyline": "One-line storyline description.",
-      "reasoning": "Why this works.",
-      "lines": [
-        {
-          "time": "00:01:59,000",
-          "text": "The subtitle line text",
-          "tag": "ESSENTIAL"
-        },
-        {
-          "time": "00:02:18,000",
-          "text": "An optional side sentence",
-          "tag": "OPTIONAL"
-        }
-      ]
+      "reasoning": "Why this works."
     }
   ]
 }
@@ -324,21 +312,38 @@ ${serializedSubs}
 
             const scoreClass = clip.score >= 8.0 ? 'high' : 'mid';
 
-            // Calculate duration
-            const durationText = calculateDuration(clip.startTime, clip.endTime);
+            // Resolve startTime and endTime from IDs
+            const startCue = parsedSubtitles.find(s => s.index === clip.startId) || parsedSubtitles[0];
+            const endCue = parsedSubtitles.find(s => s.index === clip.endId) || parsedSubtitles[parsedSubtitles.length - 1];
+            
+            const startTime = startCue ? startCue.start : "00:00:00,000";
+            const endTime = endCue ? endCue.end : "00:00:00,000";
+            
+            // Save resolved times back to clip object for EDL/CSV exports
+            clip.startTime = startTime;
+            clip.endTime = endTime;
 
-            // Construct lines HTML
+            // Calculate duration
+            const durationText = calculateDuration(startTime, endTime);
+
+            // Dynamically reconstruct the lines list based on index range
             let linesHtml = '';
-            if (clip.lines && clip.lines.length > 0) {
+            const clipLines = parsedSubtitles.filter(s => s.index >= clip.startId && s.index <= clip.endId);
+            
+            if (clipLines.length > 0) {
                 linesHtml = `
                     <div class="lines-container">
-                        ${clip.lines.map(line => `
-                            <div class="line-row ${line.tag === 'ESSENTIAL' ? 'is-essential' : ''}">
-                                <span class="line-time">${formatTimeShort(line.time)}</span>
-                                <span class="line-badge ${line.tag === 'ESSENTIAL' ? 'essential' : 'optional'}">${line.tag}</span>
-                                <span class="line-text">${line.text}</span>
-                            </div>
-                        `).join('')}
+                        ${clipLines.map(line => {
+                            const isEssential = clip.essentialIds.includes(line.index);
+                            const tag = isEssential ? 'ESSENTIAL' : 'OPTIONAL';
+                            return `
+                                <div class="line-row ${isEssential ? 'is-essential' : ''}">
+                                    <span class="line-time">${formatTimeShort(line.start)}</span>
+                                    <span class="line-badge ${isEssential ? 'essential' : 'optional'}">${tag}</span>
+                                    <span class="line-text">${line.text}</span>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
             }
@@ -348,8 +353,8 @@ ${serializedSubs}
             if (rawMediaFile) {
                 const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
                 const objectUrl = URL.createObjectURL(rawMediaFile);
-                const startSec = parseTimeToMs(clip.startTime) / 1000;
-                const endSec = parseTimeToMs(clip.endTime) / 1000;
+                const startSec = parseTimeToMs(startTime) / 1000;
+                const endSec = parseTimeToMs(endTime) / 1000;
 
                 mediaSliceHtml = `
                     <div class="media-preview-container">
@@ -362,7 +367,7 @@ ${serializedSubs}
                              </audio>`
                         }
                         <div class="slice-controls">
-                            <span class="slice-time-indicator">Slicer: ${clip.startTime.split(',')[0]} → ${clip.endTime.split(',')[0]}</span>
+                            <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
                             <div>
                                 <button class="btn-slice-action" onclick="playSlice(${index}, ${startSec}, ${endSec})">▶ Play Clip</button>
                                 <button class="btn-slice-action" style="margin-left: 6px; background: rgba(50, 204, 202, 0.05);" onclick="downloadSlice(${index}, ${startSec}, ${endSec}, '${clip.title.replace(/'/g, "\\'")}')">💾 Download Clip</button>
@@ -377,8 +382,8 @@ ${serializedSubs}
                     <div class="clip-title-area">
                         <h4>Clip #${index + 1}: ${clip.title}</h4>
                         <div class="clip-meta">
-                            <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${clip.startTime}'); alert('Copied start time!')">
-                                ⏱️ ${clip.startTime.split(',')[0]} → ${clip.endTime.split(',')[0]}
+                            <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
+                                ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
                             </span>
                             <span class="clip-duration">${durationText}</span>
                         </div>
