@@ -280,7 +280,8 @@ VIRAL SELECTION CRITERIA:
 CRITICAL RULES FOR CLIPS:
 - Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds, and NEVER create clips that are longer than 100 seconds (e.g. 120s or 189s clips are strictly forbidden). Double-check the timestamps of your startId and endId.
 - STORY ARC COMPLETENESS & COHESION: A clip must cover one single, cohesive, complete topic or sub-topic from start to end (Introduction of thought -> Explanation -> Takeaway/Climax/Resolution). It should feel like a meaningful mini-video, not a random slice. Do not combine multiple unrelated thoughts together.
-- Do not skip or mark lines as optional in the middle of a sentence or a cohesive paragraph. Keep the "optionalIds" array extremely minimal (typically 0 to 2 cues per clip max). Mark only actual silence, repetitive stutters, or redundant filler words as optional, ensuring the clip flows continuously without confusing jumps.
+- STRICT SENTENCE INTEGRITY: Never skip or mark a line as optional in the middle of a sentence or a cohesive clause. If you skip a line, the surrounding lines must form a 100% complete, grammatically correct sentence. Every single sentence spoken in the final timeline must be fully complete from start to finish. Partial sentence skipping is strictly forbidden.
+- CONSERVATIVE AND MINIMAL SKIPPING: Keep the "optionalIds" array extremely minimal (typically 0 to 1 cue per clip max). Only skip lines that are completely unnecessary and redundant (e.g. actual stutters, long pauses/silences, or complete off-topic tangents). Do not skip standard dialogue or explanations. If in doubt, keep the cue as essential.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
 
 MULTILINGUAL SUPPORT & TRANSLATION RULES:
