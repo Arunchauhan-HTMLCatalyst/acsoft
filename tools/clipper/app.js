@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let parsedSubtitles = [];
     let detectedClips = [];
+    let rawMediaFile = null; // Store media file for local playback slices
+    let rawSrtContent = "";  // Store generated SRT content
 
     // Reconstruct Groq API key programmatically to bypass public git secret scanning blocks
     const GROQ_API_KEY = "gsk_" + "342nwlMZ" + "irNETWq6knYj" + "WGdyb3FY2fvnajq3" + "TrybP2d4f5KDBuGz";
@@ -80,12 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         fileInfo.textContent = `Selected: ${file.name} (${sizeMB.toFixed(1)} MB)`;
+        rawMediaFile = (isAudio || isVideo) ? file : null;
 
         if (isSrt) {
             // Process SRT directly
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target.result;
+                rawSrtContent = content;
                 parsedSubtitles = parseSRT(content);
                 if (parsedSubtitles.length === 0) {
                     alert("Failed to parse SRT file. Please verify its format.");
@@ -133,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const jsonData = await response.json();
             const srtContent = convertVerboseJsonToSRT(jsonData);
+            rawSrtContent = srtContent;
             parsedSubtitles = parseSRT(srtContent);
             
             if (parsedSubtitles.length === 0) {
@@ -338,6 +343,35 @@ ${serializedSubs}
                 `;
             }
 
+            // Construct Media Slicer Player HTML if audio/video file is present
+            let mediaSliceHtml = '';
+            if (rawMediaFile) {
+                const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
+                const objectUrl = URL.createObjectURL(rawMediaFile);
+                const startSec = parseTimeToMs(clip.startTime) / 1000;
+                const endSec = parseTimeToMs(clip.endTime) / 1000;
+
+                mediaSliceHtml = `
+                    <div class="media-preview-container">
+                        ${isVideo ? 
+                            `<video class="preview-media-element" id="media-player-${index}" preload="metadata">
+                                <source src="${objectUrl}" type="${rawMediaFile.type}">
+                             </video>` :
+                            `<audio class="preview-media-element" id="media-player-${index}" preload="metadata">
+                                <source src="${objectUrl}" type="${rawMediaFile.type}">
+                             </audio>`
+                        }
+                        <div class="slice-controls">
+                            <span class="slice-time-indicator">Slicer: ${clip.startTime.split(',')[0]} → ${clip.endTime.split(',')[0]}</span>
+                            <div>
+                                <button class="btn-slice-action" onclick="playSlice(${index}, ${startSec}, ${endSec})">▶ Play Clip</button>
+                                <button class="btn-slice-action" style="margin-left: 6px; background: rgba(50, 204, 202, 0.05);" onclick="downloadSlice(${index}, ${startSec}, ${endSec}, '${clip.title.replace(/'/g, "\\'")}')">💾 Download Clip</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <div class="clip-header">
                     <div class="clip-title-area">
@@ -351,6 +385,8 @@ ${serializedSubs}
                     </div>
                     <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
                 </div>
+
+                ${mediaSliceHtml}
 
                 ${linesHtml}
 
@@ -426,6 +462,135 @@ ${serializedSubs}
         const msStr = String(ms).padStart(3, '0');
 
         return `${hrsStr}:${minsStr}:${secsStr},${msStr}`;
+    }
+
+    // Sliced media player play range control
+    window.playSlice = function(index, start, end) {
+        const player = document.getElementById(`media-player-${index}`);
+        if (!player) return;
+
+        player.currentTime = start;
+        player.play();
+
+        // Listen for time updates and pause when slice ends
+        const stopOnTimeLimit = () => {
+            if (player.currentTime >= end) {
+                player.pause();
+                player.removeEventListener('timeupdate', stopOnTimeLimit);
+            }
+        };
+        player.addEventListener('timeupdate', stopOnTimeLimit);
+    };
+
+    // Slice downloader using MediaRecorder (Record locally directly in browser without server)
+    window.downloadSlice = async function(index, start, end, title) {
+        const player = document.getElementById(`media-player-${index}`);
+        if (!player) return;
+
+        const originalText = document.querySelectorAll('.btn-slice-action')[index * 2 + 1].textContent;
+        const btn = document.querySelectorAll('.btn-slice-action')[index * 2 + 1];
+        btn.textContent = "⏱️ Recording...";
+        btn.disabled = true;
+
+        try {
+            // Seek to start
+            player.currentTime = start;
+            await new Promise(resolve => {
+                player.onseeked = () => resolve();
+            });
+
+            // Capture stream
+            const stream = player.captureStream ? player.captureStream() : player.mozCaptureStream();
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            const chunks = [];
+
+            recorder.ondataavailable = e => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_clip.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                btn.textContent = originalText;
+                btn.disabled = false;
+            };
+
+            player.play();
+            recorder.start();
+
+            // Monitor duration limit and stop recording
+            const checkLimit = setInterval(() => {
+                if (player.currentTime >= end || player.paused) {
+                    clearInterval(checkLimit);
+                    player.pause();
+                    recorder.stop();
+                }
+            }, 100);
+
+        } catch (e) {
+            console.error("Local slicing failed:", e);
+            alert("Local slicing failed: " + e.message + "\nFallback: Try manually seeking to timestamps.");
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    };
+
+    // Download SRT Subtitle File
+    const exportSrtBtn = document.getElementById('exportSrtBtn');
+    exportSrtBtn.addEventListener('click', () => {
+        if (!rawSrtContent) {
+            alert("No subtitles available to download.");
+            return;
+        }
+        const blob = new Blob([rawSrtContent], { type: 'text/srt' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "acsoft_clipper_subtitles.srt";
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Export Edit Decision List (EDL) file for Adobe Premiere/DaVinci
+    const exportEdlBtn = document.getElementById('exportEdlBtn');
+    exportEdlBtn.addEventListener('click', () => {
+        if (detectedClips.length === 0) return;
+
+        let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
+
+        detectedClips.forEach((clip, index) => {
+            const clipNumStr = String(index + 1).padStart(3, '0');
+            
+            // Format timecodes for EDL: HH:MM:SS:FF (using 24fps as standard)
+            const edlStart = srtTimeToEDLTime(clip.startTime);
+            const edlEnd = srtTimeToEDLTime(clip.endTime);
+
+            // Mock timeline edits (record source in track V1, cut from source start to end, target timeline start dynamically)
+            edlContent += `${clipNumStr}  AX       V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
+            edlContent += `* FROM CLIP: ${clip.title.toUpperCase()}\n\n`;
+        });
+
+        const blob = new Blob([edlContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "acsoft_clipper_timeline.edl";
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    function srtTimeToEDLTime(srtTime) {
+        // SRT: 00:01:59,000 -> EDL: 00:01:59:00
+        const parts = srtTime.split(',');
+        const ms = parseInt(parts[1] || '0', 10);
+        const frame = Math.floor(ms / (1000 / 24)); // Calculate frames at 24fps
+        const frameStr = String(frame).padStart(2, '0');
+        return `${parts[0]}:${frameStr}`;
     }
 
     // Export CSV Handler
