@@ -294,6 +294,16 @@ body {
     cursor: pointer;
     transition: var(--transition-smooth);
     background: rgba(255, 255, 255, 0.01);
+    display: block; /* Make label act as a block element */
+}
+
+#fileInput {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
 }
 
 .upload-zone:hover, .upload-zone.dragover {
