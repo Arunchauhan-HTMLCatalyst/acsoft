@@ -445,13 +445,14 @@ ${serializedSubs}
     }
 
     function parseTimeToMs(timeStr) {
-        const parts = timeStr.split(',');
+        const normalized = timeStr.replace('.', ',');
+        const parts = normalized.split(',');
         const ms = parseInt(parts[1] || '0', 10);
         const timeParts = parts[0].split(':');
-        const h = parseInt(timeParts[0], 10) * 3600000;
-        const m = parseInt(timeParts[1], 10) * 60000;
-        const s = parseInt(timeParts[2], 10) * 1000;
-        return h + m + s;
+        const h = parseInt(timeParts[0] || '0', 10) * 3600000;
+        const m = parseInt(timeParts[1] || '0', 10) * 60000;
+        const s = parseInt(timeParts[2] || '0', 10) * 1000;
+        return h + m + s + ms;
     }
 
     // Helper: Convert Groq Whisper verbose_json to standard SRT subtitle string
@@ -516,7 +517,35 @@ ${serializedSubs}
 
             // Capture stream
             const stream = player.captureStream ? player.captureStream() : player.mozCaptureStream();
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            
+            // Detect file type & negotiate supported MIME types dynamically (prevents Safari/Firefox errors)
+            const isVideo = rawMediaFile && (rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm'));
+            
+            let options = {};
+            let extension = 'webm';
+            
+            if (isVideo) {
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    options = { mimeType: 'video/webm;codecs=vp9' };
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    options = { mimeType: 'video/webm' };
+                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    options = { mimeType: 'video/mp4' };
+                    extension = 'mp4';
+                }
+            } else {
+                if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    options = { mimeType: 'audio/webm' };
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options = { mimeType: 'audio/mp4' };
+                    extension = 'mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                    options = { mimeType: 'audio/ogg' };
+                    extension = 'ogg';
+                }
+            }
+
+            const recorder = new MediaRecorder(stream, options);
             const chunks = [];
 
             recorder.ondataavailable = e => {
@@ -524,11 +553,11 @@ ${serializedSubs}
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
+                const blob = new Blob(chunks, { type: options.mimeType || 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_clip.webm`;
+                a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_clip.${extension}`;
                 a.click();
                 URL.revokeObjectURL(url);
                 btn.textContent = originalText;
