@@ -429,7 +429,8 @@ VIRAL SELECTION CRITERIA:
 - RESOLUTION (Ending): The clip must end cleanly on a punchline, a full resolution of the current topic, a call-to-action, or a completed sentence. Avoid cutting off the speaker mid-word or mid-thought.
 
 CRITICAL RULES FOR CLIPS:
-- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds (such as 15s, 20s, 30s, or 35s clips are strictly forbidden). Double-check the timestamps of your startId and endId. If your selected range is less than 40 seconds, you MUST expand the endId further down the transcript to cover at least 40 seconds of content.
+- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds, and NEVER create clips that are longer than 100 seconds (e.g. 120s or 189s clips are strictly forbidden). Double-check the timestamps of your startId and endId.
+- STORY ARC COMPLETENESS & COHESION: A clip must cover one single, cohesive, complete topic or sub-topic from start to end (Introduction of thought -> Explanation -> Takeaway/Climax/Resolution). It should feel like a meaningful mini-video, not a random slice. Do not combine multiple unrelated thoughts together.
 - Do not skip or mark lines as optional in the middle of a sentence or a cohesive paragraph. Keep the "optionalIds" array extremely minimal (typically 0 to 2 cues per clip max). Mark only actual silence, repetitive stutters, or redundant filler words as optional, ensuring the clip flows continuously without confusing jumps.
 - Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
 
@@ -501,14 +502,15 @@ ${serializedSubs}
             const result = JSON.parse(textResponse);
             detectedClips = result.clips || [];
 
-            // Fail-safe guardrail: Ensure each clip's duration is strictly 40s to 100s, auto-expanding short clips
+            // Fail-safe guardrail: Ensure each clip's duration is strictly between 40s and 100s
             detectedClips.forEach(clip => {
                 let startCue = parsedSubtitles.find(s => s.index === clip.startId);
                 let endCue = parsedSubtitles.find(s => s.index === clip.endId);
                 if (!startCue || !endCue) return;
                 
                 let duration = (parseTimeToMs(endCue.end) - parseTimeToMs(startCue.start)) / 1000;
-                // If duration is too short, automatically extend endId
+                
+                // Case 1: Clip is too short (under 40s) -> expand endId forward
                 if (duration < 40) {
                     let currentEndIndex = parsedSubtitles.findIndex(s => s.index === clip.endId);
                     while (duration < 40 && currentEndIndex < parsedSubtitles.length - 1) {
@@ -516,14 +518,24 @@ ${serializedSubs}
                         const nextEndCue = parsedSubtitles[currentEndIndex];
                         clip.endId = nextEndCue.index;
                         duration = (parseTimeToMs(nextEndCue.end) - parseTimeToMs(startCue.start)) / 1000;
-                        if (duration > 100) {
-                            break; // Don't exceed max 100s
-                        }
                     }
-                    console.log(`Guardrail: Clip "${clip.title}" auto-expanded to ${duration.toFixed(1)}s`);
+                    console.log(`Guardrail (Expand): Clip "${clip.title}" auto-expanded to ${duration.toFixed(1)}s`);
                 }
                 
-                // Double-check essentialIds matching the new expanded range
+                // Case 2: Clip is too long (over 100s) -> shrink endId backward
+                if (duration > 100) {
+                    let currentEndIndex = parsedSubtitles.findIndex(s => s.index === clip.endId);
+                    let startCueIndex = parsedSubtitles.findIndex(s => s.index === clip.startId);
+                    while (duration > 100 && currentEndIndex > startCueIndex) {
+                        currentEndIndex--;
+                        const prevEndCue = parsedSubtitles[currentEndIndex];
+                        clip.endId = prevEndCue.index;
+                        duration = (parseTimeToMs(prevEndCue.end) - parseTimeToMs(startCue.start)) / 1000;
+                    }
+                    console.log(`Guardrail (Shrink): Clip "${clip.title}" auto-shrunk to ${duration.toFixed(1)}s`);
+                }
+                
+                // Double-check essentialIds matching the new corrected range
                 const expandedIds = [];
                 for (let idx = clip.startId; idx <= clip.endId; idx++) {
                     expandedIds.push(idx);
