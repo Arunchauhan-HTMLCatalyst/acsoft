@@ -620,58 +620,11 @@ ${serializedSubs}
                 `;
             }
 
-            // Construct Media Slicer Player HTML if audio/video file or YouTube video is present
-            let mediaSliceHtml = '';
-            const rawStartSec = parseTimeToMs(startTime) / 1000;
-            const rawEndSec = parseTimeToMs(endTime) / 1000;
-            const startSec = Math.max(0, rawStartSec - 0.005);
-            const endSec = rawEndSec + 0.005;
-
-            if (rawMediaFile || youtubeVideoId) {
-                let playerHtml = '';
-                if (youtubeVideoId) {
-                    playerHtml = `
-                        <iframe class="preview-media-element" id="media-player-${index}" 
-                            src="https://www.youtube.com/embed/${youtubeVideoId}?start=${Math.floor(startSec)}&end=${Math.ceil(endSec)}&autoplay=0&controls=1&rel=0" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                        </iframe>
-                    `;
-                } else {
-                    const isVideo = rawMediaFile.name.toLowerCase().endsWith('.mp4') || rawMediaFile.name.toLowerCase().endsWith('.mov') || rawMediaFile.name.toLowerCase().endsWith('.webm');
-                    const objectUrl = URL.createObjectURL(rawMediaFile);
-                    playerHtml = isVideo ? 
-                        `<video class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></video>` :
-                        `<audio class="preview-media-element" id="media-player-${index}" src="${objectUrl}#t=${startSec},${endSec}" preload="metadata" controls></audio>`;
-                }
-
-                mediaSliceHtml = `
-                    <div class="media-preview-container" id="preview-container-${index}">
-                        ${playerHtml}
-                        <div class="slice-controls">
-                            <span class="slice-time-indicator">Slicer: ${startTime.split(',')[0]} → ${endTime.split(',')[0]}</span>
-                            <div>
-                                <button class="btn-slice-action" onclick="playSlice(${index}, ${startSec}, ${endSec})">▶ Play Clip</button>
-                                <button class="btn-slice-action" style="margin-left: 6px; background: rgba(50, 204, 202, 0.05);" onclick="downloadSlice(${index}, ${startSec}, ${endSec}, '${clip.title.replace(/'/g, "\\'")}')">💾 Download Clip</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            card.className = `clip-card glass ${(rawMediaFile || youtubeVideoId) ? '' : 'no-media'}`;
-
-            // Left Column (Player & Controls)
-            const leftColHtml = (rawMediaFile || youtubeVideoId) ? `
-                <div class="clip-card-left">
-                    ${mediaSliceHtml}
-                </div>
-            ` : '';
+            card.className = 'clip-card glass';
 
             // Right Column (Metadata, lines, analysis)
             const rightColHtml = `
-                <div class="clip-card-right">
+                <div class="clip-card-right" style="flex: 1; width: 100%;">
                     <div class="clip-header">
                         <div class="clip-title-area">
                             <h4>Clip #${index + 1}: ${clip.title}</h4>
@@ -700,7 +653,7 @@ ${serializedSubs}
                 </div>
             `;
 
-            card.innerHTML = rawMediaFile ? (leftColHtml + rightColHtml) : rightColHtml;
+            card.innerHTML = rightColHtml;
             resultsSection.appendChild(card);
         });
     }
