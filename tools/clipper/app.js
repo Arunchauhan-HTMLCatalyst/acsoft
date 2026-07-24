@@ -200,7 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const prompt = `
 You are an expert AI video clipping assistant for short-form video editors (Reels, TikTok, Shorts).
 Analyze the following video transcript cues and identify 10 to 20 highly engaging, hook-worthy short-form clips.
-Each clip should be around 30 to 90 seconds in duration.
+
+CRITICAL RULES FOR CLIPS:
+- Each clip MUST be a minimum of 30 seconds and a maximum of 90 seconds. 
+- You can make a clip slightly shorter than 30 seconds ONLY if it is necessary to keep the storyline cohesive and clean, but never exceed 90 seconds.
+- Every clip MUST tell a complete story or deliver a complete, self-contained thought. Do not cut in the middle of a sentence or an incomplete topic context.
 
 For each clip, you must:
 1. Provide a catchy, viral-style Title.
