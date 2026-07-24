@@ -42,18 +42,18 @@
         <section class="setup-section">
             <div class="setup-grid-single">
                 
-                <!-- SRT Upload Card -->
+                <!-- Video, Audio or SRT Upload Card -->
                 <div class="setup-card glass">
                     <div class="card-header">
                         <div class="step-num">⚡</div>
-                        <h3>Upload Video Subtitles</h3>
+                        <h3>Upload Video, Audio or Subtitles</h3>
                     </div>
-                    <p class="card-desc">Drag and drop your subtitle file below. Clipper automatically extracts the best clips and analyzes storyline points using high-speed AI.</p>
+                    <p class="card-desc">Drag and drop your file below. Supports <code>.srt</code> transcripts, video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code> up to 200MB), or audio (<code>.mp3</code>, <code>.m4a</code>, <code>.wav</code> up to 100MB).</p>
                     
                     <label class="upload-zone" id="uploadZone" for="fileInput">
-                        <div class="upload-icon">📄</div>
-                        <p class="upload-text">Drag & drop your <strong>.srt file</strong> here or <span class="browse-btn">Browse File</span></p>
-                        <input type="file" id="fileInput" accept=".srt" aria-label="Subtitle File Input">
+                        <div class="upload-icon">🎬</div>
+                        <p class="upload-text">Drag & drop your <strong>video, audio or .srt</strong> here or <span class="browse-btn">Browse File</span></p>
+                        <input type="file" id="fileInput" accept=".srt,.mp3,.wav,.m4a,.mp4,.mov,.webm" aria-label="Media File Input">
                         <div class="file-info" id="fileInfo"></div>
                     </label>
                 </div>

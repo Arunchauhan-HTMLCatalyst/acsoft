@@ -56,25 +56,98 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleFile(file) {
-        if (!file.name.endsWith('.srt')) {
-            alert('Please upload a valid .srt file');
+        const name = file.name.toLowerCase();
+        const sizeMB = file.size / (1024 * 1024);
+
+        // Validation based on file type
+        const isSrt = name.endsWith('.srt');
+        const isAudio = name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.m4a');
+        const isVideo = name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.webm');
+
+        if (!isSrt && !isAudio && !isVideo) {
+            alert('Unsupported file type. Please upload .srt, video (.mp4, .mov, .webm) or audio (.mp3, .wav, .m4a) files.');
             return;
         }
 
-        fileInfo.textContent = `Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target.result;
-            parsedSubtitles = parseSRT(content);
-            if (parsedSubtitles.length === 0) {
-                alert("Failed to parse SRT file. Please verify its format.");
-                return;
+        // Size limits checks
+        if (isAudio && sizeMB > 100) {
+            alert(`Audio file is too large (${sizeMB.toFixed(1)}MB). Max limit is 100MB.`);
+            return;
+        }
+        if (isVideo && sizeMB > 200) {
+            alert(`Video file is too large (${sizeMB.toFixed(1)}MB). Max limit is 200MB.`);
+            return;
+        }
+
+        fileInfo.textContent = `Selected: ${file.name} (${sizeMB.toFixed(1)} MB)`;
+
+        if (isSrt) {
+            // Process SRT directly
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                parsedSubtitles = parseSRT(content);
+                if (parsedSubtitles.length === 0) {
+                    alert("Failed to parse SRT file. Please verify its format.");
+                    return;
+                }
+                analyzeWithAI();
+            };
+            reader.readAsText(file);
+        } else {
+            // If the media file is larger than 25MB, remind about the Groq Whisper 25MB limit (but try sending it anyway)
+            if (sizeMB > 25) {
+                alert("Note: Groq Whisper API has a strict 25MB file size upload limit. We will attempt transcription, but it may fail. For large files, please compress them or upload an .srt directly.");
             }
-            // Trigger AI analysis
+            // Transcribe media file first via Groq Whisper
+            transcribeAndAnalyze(file);
+        }
+    }
+
+    // Audio/Video Transcription via Groq Whisper
+    async function transcribeAndAnalyze(file) {
+        loadingSection.classList.remove('hidden');
+        placeholderState.classList.add('hidden');
+        resultsSection.innerHTML = '';
+        controlBar.classList.add('hidden');
+        loadingText.textContent = "Transcribing Audio via AI...";
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('model', 'whisper-large-v3-turbo');
+        formData.append('response_format', 'srt');
+
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Groq Transcription Error');
+            }
+
+            const srtContent = await response.text();
+            parsedSubtitles = parseSRT(srtContent);
+            
+            if (parsedSubtitles.length === 0) {
+                throw new Error("Whisper transcription did not generate valid subtitles. Try again with a different format.");
+            }
+
+            // Chain to Llama Clipper Analysis
+            loadingText.textContent = "Analyzing Storyline & Clips...";
             analyzeWithAI();
-        };
-        reader.readAsText(file);
+
+        } catch (error) {
+            console.error(error);
+            alert(`Transcription failed: ${error.message}`);
+            placeholderState.classList.remove('hidden');
+            loadingSection.classList.add('hidden');
+        }
     }
 
     // SRT Parser Logic
