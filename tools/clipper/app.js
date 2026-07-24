@@ -297,7 +297,6 @@ For each clip, you must:
    - "optionalIds": Only actual stutters, tangents, or fillers to trim (keep this array very small, under 2 items, to prevent disjointed flows).
 5. Provide a 1-line storyline description of the clip's flow.
 6. Provide 1-line reasoning on why this clip will perform well.
-7. Provide a 1-line "trimExplanation" explaining in detail exactly which stutters, redundant phrases, or silences inside "optionalIds" should be trimmed and why the main story of the clip remains perfectly complete and meaningful without them.
 
 Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
 
@@ -311,8 +310,7 @@ Return ONLY a valid JSON object matching the schema below. Do not repeat the sub
       "essentialIds": [12, 13, 14, 15, 16, 17],
       "optionalIds": [],
       "storyline": "One-line storyline description.",
-      "reasoning": "Why this works.",
-      "trimExplanation": "Brief explanation of what fillers, repetitions, or silences inside this clip range can be trimmed and why the story stays intact."
+      "reasoning": "Why this works."
     }
   ]
 }
@@ -522,12 +520,6 @@ ${serializedSubs}
                             <strong>Why it works:</strong>
                             <p>${clip.reasoning}</p>
                         </div>
-                        ${clip.trimExplanation ? `
-                        <div class="trim-info" style="border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 10px;">
-                            <strong style="color: var(--color-optional);">Trim Recommendations (Silence & Fillers):</strong>
-                            <p style="color: var(--color-text-secondary); margin-top: 2px;">${clip.trimExplanation}</p>
-                        </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
