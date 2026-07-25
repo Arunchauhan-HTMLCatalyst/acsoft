@@ -1,12 +1,11 @@
 import os
 import sys
-import urllib.request
-import urllib.parse
 import subprocess
+import urllib.parse
 
 # Auto-install dependencies
 def install_dependencies():
-    required_packages = ['flask', 'flask-cors', 'yt-dlp']
+    required_packages = ['flask', 'flask-cors', 'httpx']
     for pkg in required_packages:
         try:
             __import__(pkg.replace('-', '_'))
@@ -16,13 +15,19 @@ def install_dependencies():
 
 install_dependencies()
 
-from flask import Flask, request, Response, jsonify
+from flask import Flask, request, redirect, jsonify
 from flask_cors import CORS
-import yt_dlp
+import httpx
+import re
 
 app = Flask(__name__)
-# Allow CORS requests from local development and acsoft.online production domains
+# Allow CORS requests from all domains
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+def parse_id(url):
+    reg = r'(?:youtu\.be/|youtube\.com/(?:embed/|v/|watch\?v=|watch\?.+&v=|shorts/|live/))([^?&]+)'
+    match = re.search(reg, url)
+    return match.group(1) if match else None
 
 @app.route('/api/info', methods=['GET'])
 def get_info():
@@ -30,94 +35,76 @@ def get_info():
     if not url:
         return jsonify({'error': 'URL parameter is required'}), 400
     
-    try:
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            
-            # Extract only formats that contain both video and audio (pre-muxed) for simplicity,
-            # or best audio format.
-            formats = []
-            
-            # Add pre-muxed video formats
-            for f in info.get('formats', []):
-                if f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('ext') == 'mp4':
-                    formats.append({
-                        'format_id': f.get('format_id'),
-                        'resolution': f.get('resolution') or f.get('format_note'),
-                        'ext': f.get('ext'),
-                        'filesize': f.get('filesize') or f.get('filesize_approx')
-                    })
-            
-            return jsonify({
-                'title': info.get('title'),
-                'thumbnail': info.get('thumbnail') or info.get('thumbnails', [{}])[-1].get('url'),
-                'duration': info.get('duration'),
-                'formats': formats
-            })
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    video_id = parse_id(url)
+    if not video_id:
+        return jsonify({'error': 'Invalid YouTube URL'}), 400
+        
+    return jsonify({
+        'title': 'YouTube Video',
+        'thumbnail': f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg',
+        'duration': 0,
+        'formats': [
+            {'format_id': '1080', 'resolution': '1080p (Full HD)', 'ext': 'mp4'},
+            {'format_id': '720', 'resolution': '720p (HD)', 'ext': 'mp4'},
+            {'format_id': '480', 'resolution': '480p (SD)', 'ext': 'mp4'},
+            {'format_id': '360', 'resolution': '360p', 'ext': 'mp4'}
+        ]
+    })
 
 @app.route('/api/download', methods=['GET'])
 def download():
     url = request.args.get('url')
-    format_id = request.args.get('format', 'best')
+    format_id = request.args.get('format', '1080')
     
     if not url:
         return "URL parameter is required", 400
         
-    try:
-        ydl_opts = {
-            'format': format_id,
-            'quiet': True,
-            'no_warnings': True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            stream_url = info.get('url')
-            title = info.get('title', 'download')
-            ext = info.get('ext', 'mp4')
-            
-            if not stream_url:
-                return "Could not resolve stream URL", 500
-            
-            # Parse the filename safely for Content-Disposition header
-            safe_title = urllib.parse.quote(title)
-            
-            # Forward the stream request directly from YouTube to the client
-            req = urllib.request.Request(
-                stream_url,
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                }
-            )
-            
-            def generate():
+    is_audio = (format_id == 'bestaudio')
+    
+    # Configure the payload for Cobalt
+    payload = {
+        "url": url,
+        "videoQuality": format_id if not is_audio else "1080",
+        "vQuality": format_id if not is_audio else "1080",
+        "downloadMode": "audio" if is_audio else "auto",
+        "isAudioOnly": is_audio,
+        "isAudio": is_audio,
+        "aFormat": "mp3",
+        "audioFormat": "mp3",
+        "filenamePattern": "basic"
+    }
+
+    instances = [
+        'https://api.cobalt.tools',
+        'https://co.wuk.sh',
+        'https://cobalt.k6.cz',
+        'https://api.cobalt.best',
+        'https://cobalt.perennialte.ch'
+    ]
+
+    with httpx.Client(verify=False) as client:
+        for instance in instances:
+            for path in [instance, f"{instance}/api/json"]:
                 try:
-                    with urllib.request.urlopen(req) as response:
-                        while True:
-                            chunk = response.read(1024 * 64)  # Read 64KB chunks
-                            if not chunk:
-                                break
-                            yield chunk
-                except Exception as stream_err:
-                    print(f"Error during stream generation: {stream_err}")
-            
-            # Return streamed response with attachment headers to force direct browser download
-            return Response(
-                generate(),
-                headers={
-                    'Content-Disposition': f"attachment; filename*=UTF-8''{safe_title}.{ext}",
-                    'Content-Type': 'application/octet-stream'
-                }
-            )
-            
-    except Exception as e:
-        return str(e), 500
+                    response = client.post(
+                        path,
+                        json=payload,
+                        headers={
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        timeout=8.0
+                    )
+                    if response.status_code == 200:
+                        res_data = response.json()
+                        if res_data and "url" in res_data:
+                            return redirect(res_data["url"])
+                except Exception as e:
+                    print(f"Node query failed for {path}: {e}")
+                    
+    # Fallback to SaveFrom if all fails
+    fallback_url = f"https://savefrom.net/?url={urllib.parse.quote(url)}"
+    return redirect(fallback_url)
 
 if __name__ == '__main__':
     print("=" * 60)
