@@ -7,10 +7,10 @@
     /* Colors */
     --color-bg: #050505;
     --color-bg-alt: #0a0a0a;
-    --color-surface: #0f0f10;
-    --color-surface-hover: #141416;
+    --color-surface: rgba(15, 15, 16, 0.45);
+    --color-surface-hover: rgba(20, 20, 22, 0.6);
     --color-border: rgba(255, 255, 255, 0.05);
-    --color-border-glow: rgba(50, 204, 202, 0.2);
+    --color-border-glow: rgba(50, 204, 202, 0.25);
     
     --color-primary: #ffffff;
     --color-secondary: #f4f4f5;
@@ -18,25 +18,29 @@
     --color-accent-rgb: 50, 204, 202;
     
     --color-text-primary: #ffffff;
-    --color-text-secondary: #a1a1aa;/* Zinc-400 */
-    --color-text-muted: #52525b;    /* Zinc-600 */
+    --color-text-secondary: #e4e4e7;/* Zinc-300 */
+    --color-text-muted: #a1a1aa;    /* Zinc-400 */
     
-    /* Fonts */
-    --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* Fonts (Outfit is Google Sans equivalent) */
+    --font-heading: 'Outfit', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Outfit', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
     
     /* Layout */
     --max-width: 1040px;            /* Narrower container for premium, focused editorial layout */
     --header-height: 70px;
-    --border-radius-sm: 6px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 18px;
-    --transition-smooth: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    --border-radius-sm: 8px;
+    --border-radius-md: 16px;
+    --border-radius-lg: 24px;
+    --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     
-    /* Shadows */
-    --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.7);
-    --shadow-glow: 0 0 20px rgba(0, 242, 254, 0.1);
+    /* Frosted Glassmorphism Tokens */
+    --glass-bg: rgba(12, 12, 14, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-backdrop-filter: blur(16px) saturate(180%);
+    --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.8);
+    --shadow-glow: 0 0 30px rgba(50, 204, 202, 0.15);
 }
 
 /* Global Reset & Base Styles */
@@ -124,11 +128,11 @@ img {
 
 .glow-point {
     position: absolute;
-    width: 400px;
-    height: 400px;
+    width: 650px;
+    height: 650px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 242, 254, 0.03) 0%, rgba(0,0,0,0) 70%);
-    filter: blur(80px);
+    background: radial-gradient(circle, rgba(50, 204, 202, 0.12) 0%, rgba(0,0,0,0) 70%);
+    filter: blur(120px);
     pointer-events: none;
 }
 
@@ -1666,4 +1670,36 @@ h1, h2, h3, h4, h5, h6 {
     .founder-card {
         padding: 30px 20px;
     }
+}
+
+/* ==========================================================================
+   Frosted Glassmorphism & Depth Upgrades
+   ========================================================================== */
+.service-card,
+.product-card,
+.why-card,
+.pricing-card,
+.founder-card,
+.video-card,
+.contact-form-card,
+.browser-window {
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-backdrop-filter) !important;
+    -webkit-backdrop-filter: var(--glass-backdrop-filter) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    transition: var(--transition-smooth) !important;
+}
+
+.service-card:hover,
+.product-card:hover,
+.why-card:hover,
+.pricing-card:hover,
+.founder-card:hover,
+.video-card:hover,
+.contact-form-card:hover,
+.browser-window:hover {
+    border-color: rgba(50, 204, 202, 0.35) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 35px rgba(50, 204, 202, 0.08) !important;
+    transform: translateY(-4px) !important;
 }
