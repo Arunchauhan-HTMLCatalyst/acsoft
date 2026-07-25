@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // API Configurations
     // REPLACE THIS URL with your actual public Render/Railway URL once deployed
-    const ONLINE_API_BASE = 'https://acsoft-downloader-api.onrender.com';
+    const ONLINE_API_BASE = 'https://acsoft-api.onrender.com';
     const LOCAL_API_BASE = 'http://localhost:8000'; // FastAPI default port (Uvicorn)
 
     // Form states
