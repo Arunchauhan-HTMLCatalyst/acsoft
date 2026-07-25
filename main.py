@@ -4,11 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import re
 import urllib.parse
+import asyncio
 
 app = FastAPI(
     title="acSoft YouTube Downloader API",
-    description="CORS-proxied backend routing requests through unblocked Cobalt nodes.",
-    version="1.1"
+    description="High-performance async CORS-proxied backend utilizing parallel Cobalt node queries.",
+    version="1.2"
 )
 
 # Enable CORS for all origins (allowing frontend calls from any domain)
@@ -24,6 +25,26 @@ def parse_id(url):
     reg = r'(?:youtu\.be/|youtube\.com/(?:embed/|v/|watch\?v=|watch\?.+&v=|shorts/|live/))([^?&]+)'
     match = re.search(reg, url)
     return match.group(1) if match else None
+
+# Helper: Async query task for individual Cobalt nodes
+async def query_node(client: httpx.AsyncClient, path: str, payload: dict) -> str:
+    try:
+        response = await client.post(
+            path,
+            json=payload,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            timeout=5.0  # Limit timeout to 5 seconds to fail fast
+        )
+        if response.status_code == 200:
+            res_data = response.json()
+            if res_data and "url" in res_data:
+                return res_data["url"]
+    except Exception:
+        pass
+    return None
 
 @app.get("/api/info")
 def get_info(url: str = Query(..., description="YouTube video URL")):
@@ -47,7 +68,7 @@ def get_info(url: str = Query(..., description="YouTube video URL")):
 async def download(url: str = Query(..., description="YouTube video URL"), format: str = Query("1080", description="Target format or resolution")):
     is_audio = (format == 'bestaudio')
     
-    # Configure the payload for Cobalt
+    # Configure request payload parameters
     payload = {
         "url": url,
         "videoQuality": format if not is_audio else "1080",
@@ -60,6 +81,7 @@ async def download(url: str = Query(..., description="YouTube video URL"), forma
         "filenamePattern": "basic"
     }
 
+    # High-uptime community hosted instances of Cobalt
     instances = [
         'https://api.cobalt.tools',
         'https://co.wuk.sh',
@@ -68,28 +90,21 @@ async def download(url: str = Query(..., description="YouTube video URL"), forma
         'https://cobalt.perennialte.ch'
     ]
 
+    tasks = []
+    # Using AsyncClient to query all nodes concurrently
     async with httpx.AsyncClient(verify=False) as client:
         for instance in instances:
             for path in [instance, f"{instance}/api/json"]:
-                try:
-                    response = await client.post(
-                        path,
-                        json=payload,
-                        headers={
-                            "Accept": "application/json",
-                            "Content-Type": "application/json"
-                        },
-                        timeout=8.0
-                    )
-                    if response.status_code == 200:
-                        res_data = response.json()
-                        if res_data and "url" in res_data:
-                            # Redirect client browser directly to the resolved stream link
-                            return RedirectResponse(url=res_data["url"])
-                except Exception as e:
-                    print(f"Node query failed for {path}: {e}")
-                    
-    # Fallback to SaveFrom if all fails
+                tasks.append(query_node(client, path, payload))
+        
+        # Monitor tasks in parallel; resolve immediately when the first node succeeds
+        for completed_task in asyncio.as_completed(tasks):
+            resolved_url = await completed_task
+            if resolved_url:
+                # Success: Redirect browser directly to download stream link
+                return RedirectResponse(url=resolved_url)
+                
+    # Fallback to SaveFrom if all Cobalt instances fail
     fallback_url = f"https://savefrom.net/?url={urllib.parse.quote(url)}"
     return RedirectResponse(url=fallback_url)
 

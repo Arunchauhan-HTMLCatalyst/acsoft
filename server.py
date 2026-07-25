@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Auto-install dependencies
 def install_dependencies():
@@ -28,6 +29,27 @@ def parse_id(url):
     reg = r'(?:youtu\.be/|youtube\.com/(?:embed/|v/|watch\?v=|watch\?.+&v=|shorts/|live/))([^?&]+)'
     match = re.search(reg, url)
     return match.group(1) if match else None
+
+# Helper: Thread query task for individual Cobalt nodes
+def query_node_sync(path, payload):
+    try:
+        with httpx.Client(verify=False) as client:
+            response = client.post(
+                path,
+                json=payload,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                timeout=5.0
+            )
+            if response.status_code == 200:
+                res_data = response.json()
+                if res_data and "url" in res_data:
+                    return res_data["url"]
+    except Exception:
+        pass
+    return None
 
 @app.route('/api/info', methods=['GET'])
 def get_info():
@@ -82,25 +104,20 @@ def download():
         'https://cobalt.perennialte.ch'
     ]
 
-    with httpx.Client(verify=False) as client:
-        for instance in instances:
-            for path in [instance, f"{instance}/api/json"]:
-                try:
-                    response = client.post(
-                        path,
-                        json=payload,
-                        headers={
-                            "Accept": "application/json",
-                            "Content-Type": "application/json"
-                        },
-                        timeout=8.0
-                    )
-                    if response.status_code == 200:
-                        res_data = response.json()
-                        if res_data and "url" in res_data:
-                            return redirect(res_data["url"])
-                except Exception as e:
-                    print(f"Node query failed for {path}: {e}")
+    paths = []
+    for instance in instances:
+        for path in [instance, f"{instance}/api/json"]:
+            paths.append(path)
+
+    # Use ThreadPoolExecutor to query all Cobalt nodes in parallel threads
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(query_node_sync, p, payload): p for p in paths}
+        
+        for future in as_completed(futures):
+            resolved_url = future.result()
+            if resolved_url:
+                # Succeeded: Redirect instantly
+                return redirect(resolved_url)
                     
     # Fallback to SaveFrom if all fails
     fallback_url = f"https://savefrom.net/?url={urllib.parse.quote(url)}"
