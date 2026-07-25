@@ -84,9 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         loaderText.textContent = "Connecting to Cobalt API server...";
         loaderOverlay.classList.remove('hidden');
 
+        // Standardize URL to remove tracking params (e.g. ?si=...) before sending to API
+        const cleanUrl = currentVideoId ? `https://www.youtube.com/watch?v=${currentVideoId}` : rawUrl;
+
         // Body parameters (supporting both legacy v7/v8 and modern v10 specifications)
         const requestPayload = {
-            url: rawUrl,
+            url: cleanUrl,
             videoQuality: activeFormat === 'video' ? activeQuality : '1080',
             vQuality: activeFormat === 'video' ? activeQuality : '1080', // legacy fallback
             downloadMode: activeFormat === 'audio' ? 'audio' : 'auto',
@@ -150,6 +153,65 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             if (success) break;
+        }
+
+        // Secondary Fallback: Invidious Instances (Completely bypasses Cloudflare/Cobalt API blocks)
+        if (!success && currentVideoId) {
+            const invidiousInstances = [
+                'https://invidious.yewtu.be',
+                'https://inv.tux.im',
+                'https://invidious.projectsegfau.lt',
+                'https://invidious.privacydev.net'
+            ];
+
+            for (const invInstance of invidiousInstances) {
+                try {
+                    loaderText.textContent = `Retrying via ${new URL(invInstance).hostname}...`;
+                    
+                    const invResponse = await fetch(`${invInstance}/api/v1/videos/${currentVideoId}`);
+                    if (invResponse.ok) {
+                        const invData = await invResponse.json();
+                        if (activeFormat === 'video') {
+                            const streams = invData.formatStreams || [];
+                            // Find the best quality matching activeQuality (720p fallback to 360p)
+                            let selectedStream = null;
+                            if (activeQuality === '1080' || activeQuality === '720') {
+                                selectedStream = streams.find(s => s.quality === 'hd720') || streams.find(s => s.quality === 'medium');
+                            } else {
+                                selectedStream = streams.find(s => s.quality === 'medium') || streams.find(s => s.quality === 'hd720');
+                            }
+
+                            if (selectedStream && selectedStream.url) {
+                                const a = document.createElement('a');
+                                a.href = selectedStream.url;
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                success = true;
+                                break;
+                            }
+                        } else {
+                            // Audio extraction (M4A stream)
+                            const adaptive = invData.adaptiveFormats || [];
+                            const audioStream = adaptive.find(s => s.type && s.type.startsWith('audio/'));
+                            
+                            if (audioStream && audioStream.url) {
+                                const a = document.createElement('a');
+                                a.href = audioStream.url;
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                success = true;
+                                break;
+                            }
+                        }
+                    }
+                } catch (invErr) {
+                    console.warn(`Invidious instance ${invInstance} failed:`, invErr);
+                }
+            }
         }
 
         loaderOverlay.classList.add('hidden');
