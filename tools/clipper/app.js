@@ -260,71 +260,61 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholderState.classList.add('hidden');
         resultsSection.innerHTML = '';
         controlBar.classList.add('hidden');
-        updateProgress(90, "AI is finding viral hooks & cutting segments...");
+        updateProgress(90, "AI is analyzing segments & extracting standalone ideas...");
 
         // Token Optimization: Segment and compress transcripts by assigning simple ID numbers instead of long timestamp structures
         const serializedSubs = parsedSubtitles.map(s => `ID:${s.index} | ${s.start.split(',')[0]} | ${s.text}`).join('\n');
 
-        // Instruct Groq's Llama 3.1 8B model to return JSON listing the clips
+        // Instruct Groq's Llama 3.1 8B model to return JSON listing the clips based on the custom expert prompt
         const prompt = `
-You are a world-class AI video producer, chief editor, and viral growth hacking consultant (similar to Opus Clip, Vizard, and Munch).
-Your job is to analyze the transcript cues and extract the most engaging, stand-alone, impactful clips suited for Reels, TikToks, and Shorts.
+You are an expert content analyst.
 
-CRITICAL REQUIREMENT:
-- Extract 4 to 15 highly engaging, stand-alone, viral clips.
-- If the video is short or you cannot find many natural highlights, you MUST extract at least 4 sequential clips (dividing the video into 4 logical chronological chapters).
+Your task is to analyze the provided transcript and extract all meaningful, standalone clips.
 
-=========================================
-1. NO SKIPPING SYSTEM (100% DIALOGUE CONTINUITY)
-=========================================
-- DO NOT mark any lines as optional, skipped, or trimmed. Every single cue within the selected clip range (from startId to endId) will be played continuously.
-- Therefore, you do not need to identify "essentialIds", "optionalIds", or "trimReasons" anymore.
-- Focus entirely on choosing the perfect startId and endId where the entire continuous block of dialogue is extremely solid, high-value, and engaging from beginning to end.
+IMPORTANT:
+- The transcript may be in ANY language (English, Hindi, Hinglish, Urdu, Spanish, French, Arabic, etc.).
+- First detect the language automatically.
+- NEVER translate the transcript.
+- Analyze and return results in the SAME language as the transcript.
+- If the transcript contains multiple languages (e.g., Hinglish), preserve the original language.
 
-=========================================
-2. VIRAL SELECTION ARCHETYPES (CHOOSE FROM THESE)
-=========================================
-Your selected clips must fit one of the following high-impact short-form video archetypes:
-A. THE MYTH BUSTER: Where the speaker challenges a common belief, exposes a lie, or shares a counter-intuitive truth. (e.g. "Most people think X, but actually Y...")
-B. THE ACTIONABLE BLUEPRINT: A step-by-step tutorial, list, or blueprint that gives the user immediate value. (e.g. "Here is a 3-step formula to...")
-C. THE EMOTIONAL CLIMAX: An inspiring story, a vulnerability leak, a personal struggle, or a deep life lesson that creates a strong emotional connection.
-D. THE INSIGHTFUL Q&A: A direct, deep answer to a complex or highly-debated question.
+Your goal is NOT to find viral hooks.
+Your goal is to find complete, self-contained ideas that can be watched independently without requiring previous or future context.
 
-=========================================
-3. THE HOOK & PAYOFF RULE (STRICT START & END BOUNDS)
-=========================================
-- THE HOOK (First 3 seconds): The startId MUST function as a powerful, immediate hook. It must begin with a strong statement, a question, a bold claim, or a story setup.
-  * GOOD: "This is the single biggest mistake...", "If you want to grow...", "I remember when...", "Do you know what happens when..."
-  * BAD (Never start here): Conjunctions ("and", "but", "so", "because", "then", "like"), filler stutters, mid-sentence thoughts, or transition phrases.
-- THE PAYOFF (The Climax & Resolution at endId): The clip must end cleanly on a punchline, a full resolution of the current topic, a call-to-action, or a completed sentence.
-  * Ensure the viewer feels a sense of completion. Avoid cutting off the speaker mid-word, mid-sentence, or in the middle of an unresolved point.
+A valid clip MUST satisfy ALL of the following:
 
-=========================================
-4. DURATION BOUNDS
-=========================================
-- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds.
-- Strictly respect these duration bounds! NEVER create clips that are shorter than 40 seconds, and NEVER create clips that are longer than 100 seconds (e.g. 120s or 189s clips are strictly forbidden). Double-check the timestamps of your startId and endId.
+1. It contains one complete idea.
+2. It starts naturally at the beginning of a thought.
+3. It ends naturally after the idea is completed.
+4. It does not require previous context.
+5. It does not require future context.
+6. It focuses on one topic only.
+7. It has clear meaning when viewed alone.
+8. Remove unnecessary filler words if they do not affect meaning.
+9. Do NOT split a continuous explanation into multiple clips unless the topic changes.
+10. If a topic continues for several minutes but remains coherent, keep it as one clip.
+11. If the speaker changes topic, create a new clip.
+12. Ignore greetings, introductions, ads, sponsor messages, jokes without meaning, and repeated information unless they are essential.
 
-=========================================
-5. MULTILINGUAL SUPPORT & TRANSLATION RULES
-=========================================
-- The input transcript might be in English, Hindi (Devanagari or Hinglish), Marathi, Tamil, Punjabi, Telugu, Gujarati, Bengali, or any other major language.
-- Crucially, the returned JSON fields "title", "storyline", and "reasoning" MUST ALWAYS be written in clear, fluent, professional English (no mixing or local scripts), regardless of the input transcript language.
+CRITICAL DURATION BOUNDS:
+- Each clip MUST be a minimum of 40 seconds and a maximum of 100 seconds. Strictly respect these duration bounds!
+- Identify the start cue ID and end cue ID of the clip (from the TRANSCRIPT CUES list).
 
-=========================================
-6. OUTPUT JSON FORMAT
-=========================================
-Return ONLY a valid JSON object matching the schema below. Do not repeat the subtitle text, just return the cue ID references to save tokens:
+Output JSON only.
 
+JSON format:
 {
+  "language": "Detected language code or name here",
   "clips": [
     {
-      "title": "A highly-viral, engaging hook title",
-      "score": 9.5,
+      "clip_number": 1,
       "startId": 12,
       "endId": 38,
-      "storyline": "Detailed explanation of the narrative flow of this clip.",
-      "reasoning": "Psychological trigger or viral growth reason why this clip will get high watch time and engagement."
+      "title": "Title of the clip in the original language",
+      "summary": "One sentence summary in the original language",
+      "topic": "Main Topic in the original language",
+      "confidence": 95,
+      "transcript": "Exact reconstruct transcript text of only that clip range in the original language"
     }
   ]
 }
@@ -432,15 +422,17 @@ ${serializedSubs}
         controlBar.classList.remove('hidden');
         statClips.textContent = detectedClips.length;
 
-        const totalScore = detectedClips.reduce((sum, c) => sum + parseFloat(c.score), 0);
-        statScore.textContent = (totalScore / detectedClips.length).toFixed(1);
+        // Display confidence average or simply number of detected items
+        const totalConfidence = detectedClips.reduce((sum, c) => sum + parseFloat(c.confidence || 90), 0);
+        statScore.textContent = (totalConfidence / detectedClips.length).toFixed(1);
 
         detectedClips.forEach((clip, index) => {
             const card = document.createElement('div');
             card.className = 'clip-card glass';
             card.style.animationDelay = `${index * 0.1}s`;
 
-            const scoreClass = clip.score >= 8.0 ? 'high' : 'mid';
+            const confidenceVal = parseFloat(clip.confidence || 90);
+            const scoreClass = confidenceVal >= 85 ? 'high' : 'mid';
 
             // Resolve startTime and endTime from IDs
             const startCue = parsedSubtitles.find(s => s.index === clip.startId) || parsedSubtitles[0];
@@ -449,7 +441,7 @@ ${serializedSubs}
             const startTime = startCue ? startCue.start : "00:00:00,000";
             const endTime = endCue ? endCue.end : "00:00:00,000";
             
-            // Save resolved times back to clip object for EDL/CSV exports
+            // Save resolved times back to clip object for CSV exports
             clip.startTime = startTime;
             clip.endTime = endTime;
 
@@ -484,12 +476,12 @@ ${serializedSubs}
 
             card.className = 'clip-card glass';
 
-            // Right Column (Metadata, lines, analysis)
+            // Right Column (Metadata, lines, analysis matching the custom prompt spec)
             const rightColHtml = `
                 <div class="clip-card-right" style="flex: 1; width: 100%;">
                     <div class="clip-header">
                         <div class="clip-title-area">
-                            <h4>Clip #${index + 1}: ${clip.title}</h4>
+                            <h4>Clip #${clip.clip_number || (index + 1)}: ${clip.title}</h4>
                             <div class="clip-meta">
                                 <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
                                     ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
@@ -497,19 +489,19 @@ ${serializedSubs}
                                 <span class="clip-duration">Duration: ${durationText}</span>
                             </div>
                         </div>
-                        <span class="score-badge ${scoreClass}">★ ${parseFloat(clip.score).toFixed(1)}</span>
+                        <span class="score-badge ${scoreClass}">Conf: ${confidenceVal}%</span>
                     </div>
 
                     ${linesHtml}
 
                     <div class="analysis-box">
                         <div class="storyline-info">
-                            <strong>Storyline Flow:</strong>
-                            <p>${clip.storyline}</p>
+                            <strong>Main Topic:</strong>
+                            <p>${clip.topic || 'N/A'}</p>
                         </div>
                         <div class="reasoning-info">
-                            <strong>Why it works:</strong>
-                            <p>${clip.reasoning}</p>
+                            <strong>Summary:</strong>
+                            <p>${clip.summary || 'N/A'}</p>
                         </div>
                     </div>
                 </div>
