@@ -3,9 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewCard = document.getElementById('previewCard');
     const videoThumbnail = document.getElementById('videoThumbnail');
     const resolutionGroup = document.getElementById('resolutionGroup');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const loaderOverlay = document.getElementById('loaderOverlay');
-    const loaderText = document.getElementById('loaderText');
+    
+    // Mirror buttons
+    const mirror1 = document.getElementById('mirror1');
+    const mirror2 = document.getElementById('mirror2');
+    const mirror3 = document.getElementById('mirror3');
 
     // Form states
     let activeFormat = 'video'; // 'video' or 'audio'
@@ -27,6 +29,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
+    // Update the link paths dynamically for direct download mirrors
+    function updateMirrorLinks() {
+        if (!currentVideoId) {
+            mirror1.removeAttribute('href');
+            mirror2.removeAttribute('href');
+            mirror3.removeAttribute('href');
+            return;
+        }
+
+        // itag 22 = 720p MP4, itag 18 = 360p MP4, itag 140 = M4A Audio
+        const itag = activeFormat === 'audio' ? '140' : activeQuality;
+        
+        // Top 3 high-uptime public Invidious nodes
+        const nodes = [
+            'https://invidious.yewtu.be',
+            'https://inv.tux.im',
+            'https://invidious.projectsegfau.lt'
+        ];
+
+        // Map direct local=true proxy download paths
+        mirror1.href = `${nodes[0]}/latest_version?id=${currentVideoId}&itag=${itag}&local=true`;
+        mirror2.href = `${nodes[1]}/latest_version?id=${currentVideoId}&itag=${itag}&local=true`;
+        mirror3.href = `${nodes[2]}/latest_version?id=${currentVideoId}&itag=${itag}&local=true`;
+    }
+
     // Monitor input changes
     youtubeUrlInput.addEventListener('input', () => {
         const id = parseYouTubeId(youtubeUrlInput.value);
@@ -37,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
             videoThumbnail.onerror = () => {
                 videoThumbnail.src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
             };
+            
+            updateMirrorLinks();
             previewCard.classList.remove('hidden');
         } else {
             currentVideoId = null;
@@ -53,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formatVideoBtn.classList.add('active');
         formatAudioBtn.classList.remove('active');
         resolutionGroup.classList.remove('hidden');
+        updateMirrorLinks();
     });
 
     formatAudioBtn.addEventListener('click', () => {
@@ -60,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formatAudioBtn.classList.add('active');
         formatVideoBtn.classList.remove('active');
         resolutionGroup.classList.add('hidden');
+        updateMirrorLinks();
     });
 
     // Quality buttons selector
@@ -69,85 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             qualityButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeQuality = btn.getAttribute('data-quality');
+            updateMirrorLinks();
         });
-    });
-
-    // Main Download Click handler
-    downloadBtn.addEventListener('click', async () => {
-        if (!currentVideoId) {
-            alert('Please paste a valid YouTube URL first.');
-            return;
-        }
-
-        // Show loading spinner
-        loaderText.textContent = "Connecting to decentralized download node...";
-        loaderOverlay.classList.remove('hidden');
-        downloadBtn.disabled = true;
-
-        // List of public Invidious instances (CORS enabled by default for public apps)
-        const instances = [
-            'https://invidious.yewtu.be',
-            'https://inv.tux.im',
-            'https://invidious.projectsegfau.lt',
-            'https://invidious.privacydev.net',
-            'https://y.com.sb'
-        ];
-
-        let success = false;
-        let finalDownloadUrl = null;
-
-        // Loop through instances to resolve video info and check format availability
-        for (const instance of instances) {
-            try {
-                loaderText.textContent = `Resolving link via ${new URL(instance).hostname}...`;
-                
-                // Fetch directly from Invidious API (No CORS proxy needed, Invidious supports CORS!)
-                const response = await fetch(`${instance}/api/v1/videos/${currentVideoId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Determine the target itag format code
-                    // itag 22 = 720p MP4, itag 18 = 360p MP4, itag 140 = M4A Audio
-                    const itag = activeFormat === 'audio' ? '140' : activeQuality;
-                    
-                    // Check if itag is supported in the metadata stream lists
-                    let formatSupported = false;
-                    if (activeFormat === 'video') {
-                        formatSupported = (data.formatStreams || []).some(s => s.itag === itag || s.quality === (itag === '22' ? 'hd720' : 'medium'));
-                    } else {
-                        formatSupported = (data.adaptiveFormats || []).some(s => s.itag === itag || (s.type && s.type.startsWith('audio/')));
-                    }
-
-                    if (formatSupported) {
-                        // Construct the direct proxied download URL
-                        // local=true forces Invidious to act as the download proxy, bypassing CORS restrictions
-                        finalDownloadUrl = `${instance}/latest_version?id=${currentVideoId}&itag=${itag}&local=true`;
-                        success = true;
-                        break;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Instance ${instance} failed:`, err);
-            }
-        }
-
-        loaderOverlay.classList.add('hidden');
-        downloadBtn.disabled = false;
-
-        if (success && finalDownloadUrl) {
-            // Trigger instant browser download in a new tab without redirects or popups
-            const a = document.createElement('a');
-            a.href = finalDownloadUrl;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } else {
-            // Last resort fallback: open a clean, reliable, ad-free converter redirect
-            const cleanUrl = `https://www.youtube.com/watch?v=${currentVideoId}`;
-            const fallbackUrl = `https://savefrom.net/?url=${encodeURIComponent(cleanUrl)}`;
-            alert("All direct download nodes are busy. Opening secure download page in a new tab...");
-            window.open(fallbackUrl, '_blank');
-        }
     });
 });
