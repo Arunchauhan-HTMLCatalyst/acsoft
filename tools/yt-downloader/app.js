@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 800);
-            const res = await fetch(`${LOCAL_API_BASE}/api/info?url=test`, { 
+            await fetch(`${LOCAL_API_BASE}/api/info?url=test`, { 
                 signal: controller.signal 
             });
             API_BASE = LOCAL_API_BASE;
@@ -54,11 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Local not running, ignore
         }
 
-        // 2. Try Online FastAPI Server
+        // 2. Try Online FastAPI Server (Render free tier takes 20-30s to boot from cold start)
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1500);
-            const res = await fetch(`${ONLINE_API_BASE}/api/info?url=test`, { 
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 seconds timeout
+            await fetch(`${ONLINE_API_BASE}/api/info?url=test`, { 
                 signal: controller.signal 
             });
             API_BASE = ONLINE_API_BASE;
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             previewCard.classList.remove('hidden');
             
             // Connect and check server
-            loaderText.textContent = "Connecting to API backend...";
+            loaderText.textContent = "Waking up cloud server (takes 15-30s on first load)...";
             loaderOverlay.classList.remove('hidden');
             
             await discoverActiveServer();
