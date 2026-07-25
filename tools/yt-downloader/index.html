@@ -31,7 +31,7 @@
             <a href="../../" class="logo">
                 ac<span>Soft</span><span class="dot">.</span>
             </a>
-            <div class="header-tag">Downloader Tool v1.08</div>
+            <div class="header-tag">Downloader Tool v1.09</div>
         </div>
     </header>
 
@@ -70,36 +70,33 @@
                                     📹 Video (MP4)
                                 </button>
                                 <button class="toggle-btn" id="formatAudio" data-format="audio">
-                                    🎵 Audio (M4A)
+                                    🎵 Audio (MP3)
                                 </button>
                             </div>
                         </div>
 
                         <div class="settings-group" id="resolutionGroup">
                             <label>Select Quality</label>
-                            <div class="quality-selector" style="grid-template-columns: 1fr 1fr;">
-                                <button class="quality-btn active" data-quality="22">720p (High Quality)</button>
-                                <button class="quality-btn" data-quality="18">360p (Medium Quality)</button>
+                            <div class="quality-selector">
+                                <button class="quality-btn active" data-quality="1080">1080p (HD)</button>
+                                <button class="quality-btn" data-quality="720">720p</button>
+                                <button class="quality-btn" data-quality="480">480p</button>
+                                <button class="quality-btn" data-quality="360">360p</button>
                             </div>
                         </div>
 
-                        <!-- Mirror download triggers -->
-                        <div class="settings-group" style="margin-top: 15px;">
-                            <label>Download Mirrors (Ad-Free)</label>
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-                                <a id="mirror1" href="#" target="_blank" class="btn btn-primary" style="justify-content: center; text-decoration: none; padding: 12px 20px;">
-                                    <span>Download via Mirror 1</span>
-                                </a>
-                                <a id="mirror2" href="#" target="_blank" class="btn btn-outline" style="justify-content: center; text-decoration: none; border: 1px solid var(--color-border); border-radius: var(--border-radius-sm); padding: 12px 20px; color: #fff; display: flex; transition: var(--transition-smooth);">
-                                    <span>Download via Mirror 2</span>
-                                </a>
-                                <a id="mirror3" href="#" target="_blank" class="btn btn-outline" style="justify-content: center; text-decoration: none; border: 1px solid var(--color-border); border-radius: var(--border-radius-sm); padding: 12px 20px; color: #fff; display: flex; transition: var(--transition-smooth);">
-                                    <span>Download via Mirror 3</span>
-                                </a>
-                            </div>
-                        </div>
+                        <!-- Action download trigger -->
+                        <button class="btn btn-primary" id="downloadBtn" style="width: 100%;">
+                            <span>Download Media</span>
+                        </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Loading overlay inside the card -->
+            <div class="loader-overlay hidden" id="loaderOverlay">
+                <div class="spinner"></div>
+                <p id="loaderText">Fetching download links from server...</p>
             </div>
         </section>
     </main>
@@ -107,11 +104,11 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container footer-bottom">
-            <p>&copy; 2026 acSoft. All rights reserved. Powered by Decentralized Invidious Network.</p>
+            <p>&copy; 2026 acSoft. All rights reserved. Powered by Cobalt Network with CORS Bypasser.</p>
         </div>
     </footer>
 
     <!-- App Logic script -->
-    <script src="app.js?v=1.08"></script>
+    <script src="app.js?v=1.09"></script>
 </body>
 </html>
