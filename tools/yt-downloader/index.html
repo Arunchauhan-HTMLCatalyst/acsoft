@@ -31,7 +31,7 @@
             <a href="../../" class="logo">
                 ac<span>Soft</span><span class="dot">.</span>
             </a>
-            <div class="header-tag">Downloader Tool v1.03</div>
+            <div class="header-tag">Downloader Tool v1.05</div>
         </div>
     </header>
 
@@ -78,16 +78,16 @@
 
                         <div class="settings-group" id="resolutionGroup">
                             <label>Select Quality</label>
-                            <div class="quality-selector">
-                                <button class="quality-btn active" data-quality="1080">1080p (HD)</button>
-                                <button class="quality-btn" data-quality="720">720p</button>
-                                <button class="quality-btn" data-quality="480">480p</button>
-                                <button class="quality-btn" data-quality="360">360p</button>
+                            <div class="quality-selector" style="grid-template-columns: 1fr 1fr;">
+                                <button class="quality-btn active" data-quality="720">720p (High Quality)</button>
+                                <button class="quality-btn" data-quality="360">360p (Medium Quality)</button>
                             </div>
                         </div>
 
-                        <!-- Action download trigger (Dynamically rendered iframe converter button) -->
-                        <div id="downloadWidgetContainer" style="width: 100%; min-height: 60px; margin-top: 10px; border-radius: var(--border-radius-sm); overflow: hidden;"></div>
+                        <!-- Action download trigger -->
+                        <button class="btn btn-primary" id="downloadBtn" style="width: 100%;">
+                            <span>Download Media</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -103,11 +103,11 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container footer-bottom">
-            <p>&copy; 2026 acSoft. All rights reserved. Powered by Savenow API.</p>
+            <p>&copy; 2026 acSoft. All rights reserved. Powered by Cobalt & Invidious APIs.</p>
         </div>
     </footer>
 
     <!-- App Logic script -->
-    <script src="app.js?v=1.03"></script>
+    <script src="app.js?v=1.05"></script>
 </body>
 </html>
