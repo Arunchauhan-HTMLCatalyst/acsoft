@@ -860,47 +860,7 @@ ${serializedSubs}
         URL.revokeObjectURL(url);
     });
 
-    // Export Edit Decision List (EDL) file for Adobe Premiere/DaVinci
-    const exportEdlBtn = document.getElementById('exportEdlBtn');
-    exportEdlBtn.addEventListener('click', () => {
-        if (detectedClips.length === 0) return;
 
-        let edlContent = "TITLE: ACSOFT CLIPPER TIMELINE\nFCM: NON-DROP FRAME\n\n";
-
-        const fileName = edlTargetFilename || "source.mp4";
-        // Always use 'AX' as the standard tape name to prevent missing media offline warnings in Premiere/Resolve
-        const tapeName = "AX";
-
-        detectedClips.forEach((clip, index) => {
-            const clipNumStr = String(index + 1).padStart(3, '0');
-            
-            // Format timecodes for EDL: HH:MM:SS:FF (using 24fps as standard)
-            const edlStart = srtTimeToEDLTime(clip.startTime);
-            const edlEnd = srtTimeToEDLTime(clip.endTime);
-
-            // Use AX as tape name and reference fileName in FROM FILE and FROM CLIP for seamless auto-linking
-            edlContent += `${clipNumStr}  AX       V     C        ${edlStart} ${edlEnd} ${edlStart} ${edlEnd}\n`;
-            edlContent += `* FROM FILE: ${fileName}\n`;
-            edlContent += `* FROM CLIP: ${fileName}\n\n`;
-        });
-
-        const blob = new Blob([edlContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "acsoft_clipper_timeline.edl";
-        a.click();
-        URL.revokeObjectURL(url);
-    });
-
-    function srtTimeToEDLTime(srtTime) {
-        // SRT: 00:01:59,000 -> EDL: 00:01:59:00
-        const parts = srtTime.split(',');
-        const ms = parseInt(parts[1] || '0', 10);
-        const frame = Math.floor(ms / (1000 / 24)); // Calculate frames at 24fps
-        const frameStr = String(frame).padStart(2, '0');
-        return `${parts[0]}:${frameStr}`;
-    }
 
     // Export CSV Handler
     exportCsvBtn.addEventListener('click', () => {

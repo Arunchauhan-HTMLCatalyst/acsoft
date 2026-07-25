@@ -727,7 +727,8 @@ body {
 .action-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
 }
 
 .btn-outline {
@@ -739,6 +740,17 @@ body {
 .btn-outline:hover {
     border-color: var(--color-accent);
     color: var(--color-accent);
+}
+
+.btn-outline.btn-danger {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #ef4444 !important;
+}
+
+.btn-outline.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: #ef4444 !important;
+    color: #ff5f5f !important;
 }
 
 
