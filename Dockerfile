@@ -1,8 +1,5 @@
 FROM python:3.10-slim
 
-# Install system dependencies (ffmpeg is needed for video/audio processing by yt-dlp)
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY requirements.txt .
