@@ -617,6 +617,60 @@ Every output clip should satisfy:
 
 --------------------------------------------------
 
+EXAMPLES OF CORRECT SEMANTIC SEGMENTATION:
+
+EXAMPLE 1: PODCAST DISCUSSION (Topic shift & Standalone thought)
+Input Transcript Cues:
+[
+  { "start": 10.0, "end": 14.5, "text": "Yeah, so anyway, I was talking to John yesterday about the weather." },
+  { "start": 14.5, "end": 19.0, "text": "But then he asked me: How do you build a successful team?" },
+  { "start": 19.0, "end": 23.5, "text": "And I told him, first you need absolute trust." },
+  { "start": 23.5, "end": 28.0, "text": "If your team members don't trust each other, speed drops to zero." },
+  { "start": 28.0, "end": 33.0, "text": "You spend all your time double-checking their work instead of building." },
+  { "start": 33.0, "end": 37.5, "text": "So trust is the ultimate velocity multiplier for any startup." },
+  { "start": 37.5, "end": 42.0, "text": "That's my core philosophy on leadership. Anyway, let's order food." }
+]
+Correct Clip Output:
+{
+  "clip_number": 1,
+  "start_time": 19.0,
+  "end_time": 37.5,
+  "duration": 18.5,
+  "title": "Trust: The Velocity Multiplier",
+  "summary": "Trust is the most critical factor for team speed and leadership success.",
+  "topic": "Startup Leadership",
+  "confidence": 98,
+  "reason": "Starts exactly on the explanation of team building, avoiding leading conjunctions, and ends cleanly on the final leadership takeaway.",
+  "transcript": "first you need absolute trust. If your team members don't trust each other, speed drops to zero. You spend all your time double-checking their work instead of building. So trust is the ultimate velocity multiplier for any startup. That's my core philosophy on leadership."
+}
+
+EXAMPLE 2: TECHNICAL TUTORIAL (Conjunction start & Complete Arc)
+Input Transcript Cues:
+[
+  { "start": 50.0, "end": 53.0, "text": "And so today we are talking about Git version control." },
+  { "start": 53.0, "end": 57.0, "text": "Most developers just use git commit without understanding the index." },
+  { "start": 57.0, "end": 62.0, "text": "The index is a staging area between your working directory and repository." },
+  { "start": 62.0, "end": 66.0, "text": "It allows you to build clean commits containing only specific changes." },
+  { "start": 66.0, "end": 71.0, "text": "So instead of staging everything, you stage file by file." },
+  { "start": 71.0, "end": 75.0, "text": "And that is how you maintain a clean, readable project history." },
+  { "start": 75.0, "end": 78.0, "text": "Alright, moving on to the next topic." }
+]
+Correct Clip Output:
+{
+  "clip_number": 1,
+  "start_time": 53.0,
+  "end_time": 75.0,
+  "duration": 22.0,
+  "title": "Understanding the Git Staging Index",
+  "summary": "Explains how the Git index functions as a staging area to build clean, precise commits.",
+  "topic": "Software Version Control",
+  "confidence": 99,
+  "reason": "Starts cleanly on the core thought, avoiding the introductory conjunctions 'And so today...', and ends cleanly on the final project history takeaway.",
+  "transcript": "Most developers just use git commit without understanding the index. The index is a staging area between your working directory and repository. It allows you to build clean commits containing only specific changes. So instead of staging everything, you stage file by file. And that is how you maintain a clean, readable project history."
+}
+
+--------------------------------------------------
+
 OUTPUT FORMAT
 
 Return valid JSON only.
@@ -831,19 +885,10 @@ ${serializedSubs}
                         <div class="clip-title-area">
                             <h4>Clip #${clip.clip_number || (index + 1)}: ${clip.title}</h4>
                             <div class="clip-meta">
-                                <div class="time-adjuster" title="Adjust start sentence backward/forward">
-                                    <span class="adj-label">Start:</span>
-                                    <button class="btn-adjust" onclick="window.adjustClipStart(${index}, -1)">◀</button>
-                                    <span class="time-val">${startTime.split(',')[0]}</span>
-                                    <button class="btn-adjust" onclick="window.adjustClipStart(${index}, 1)">▶</button>
-                                </div>
-                                <div class="time-adjuster" title="Adjust end sentence backward/forward">
-                                    <span class="adj-label">End:</span>
-                                    <button class="btn-adjust" onclick="window.adjustClipEnd(${index}, -1)">◀</button>
-                                    <span class="time-val">${endTime.split(',')[0]}</span>
-                                    <button class="btn-adjust" onclick="window.adjustClipEnd(${index}, 1)">▶</button>
-                                </div>
-                                <span class="clip-duration">⏱️ ${durationText}</span>
+                                <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
+                                    ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
+                                </span>
+                                <span class="clip-duration">Duration: ${durationText}</span>
                             </div>
                         </div>
                         <span class="score-badge ${scoreClass}">Conf: ${confidenceVal}%</span>
@@ -1266,31 +1311,4 @@ ${serializedSubs}
         controlBar.classList.add('hidden');
         setupSection.classList.remove('hidden');
     });
-
-    // Global Interactive Clip Boundary Adjusters
-    window.adjustClipStart = function(clipIndex, direction) {
-        const clip = detectedClips[clipIndex];
-        if (!clip) return;
-        
-        const currentIdx = parsedSubtitles.findIndex(s => s.index === clip.startId);
-        const targetIdx = currentIdx + direction;
-        
-        if (targetIdx >= 0 && targetIdx < parsedSubtitles.length && targetIdx <= parsedSubtitles.findIndex(s => s.index === clip.endId)) {
-            clip.startId = parsedSubtitles[targetIdx].index;
-            renderClips();
-        }
-    };
-
-    window.adjustClipEnd = function(clipIndex, direction) {
-        const clip = detectedClips[clipIndex];
-        if (!clip) return;
-        
-        const currentIdx = parsedSubtitles.findIndex(s => s.index === clip.endId);
-        const targetIdx = currentIdx + direction;
-        
-        if (targetIdx >= 0 && targetIdx < parsedSubtitles.length && targetIdx >= parsedSubtitles.findIndex(s => s.index === clip.startId)) {
-            clip.endId = parsedSubtitles[targetIdx].index;
-            renderClips();
-        }
-    };
 });
