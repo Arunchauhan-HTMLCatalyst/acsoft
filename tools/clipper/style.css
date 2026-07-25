@@ -6,10 +6,10 @@
     /* Color Tokens (matching main acSoft website theme) */
     --color-bg: #050505;
     --color-bg-alt: #0a0a0a;
-    --color-surface: #0f0f10;
-    --color-surface-hover: #141416;
-    --color-border: rgba(255, 255, 255, 0.05);
-    --color-border-glow: rgba(50, 204, 202, 0.2);
+    --color-surface: rgba(15, 15, 16, 0.45);
+    --color-surface-hover: rgba(20, 20, 22, 0.6);
+    --color-border: rgba(255, 255, 255, 0.06);
+    --color-border-glow: rgba(50, 204, 202, 0.25);
     
     --color-primary: #ffffff;
     --color-secondary: #f4f4f5;
@@ -17,8 +17,8 @@
     --color-accent-rgb: 50, 204, 202;
     
     --color-text-primary: #ffffff;
-    --color-text-secondary: #a1a1aa;
-    --color-text-muted: #52525b;
+    --color-text-secondary: #e4e4e7;
+    --color-text-muted: #a1a1aa;
     
     /* Highlight States */
     --color-essential: #10b981; /* Emerald-500 */
@@ -26,17 +26,23 @@
     --color-optional: #f59e0b; /* Amber-500 */
     --color-optional-bg: rgba(245, 158, 11, 0.06);
     
-    --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Serif & Clean Modern Font Stack */
+    --font-heading: 'Playfair Display', 'Lora', Georgia, serif;
+    --font-body: 'Lora', Georgia, serif;
     --font-mono: SFMono-Regular, Consolas, monospace;
     
     --border-radius-sm: 8px;
-    --border-radius-md: 14px;
-    --border-radius-lg: 20px;
-    --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    --border-radius-md: 16px;
+    --border-radius-lg: 24px;
+    --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     
+    /* Frosted Glassmorphism Tokens */
+    --glass-bg: rgba(12, 12, 14, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-backdrop-filter: blur(16px) saturate(180%);
+    --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.8);
-    --shadow-glow: 0 0 25px rgba(50, 204, 202, 0.12);
+    --shadow-glow: 0 0 30px rgba(50, 204, 202, 0.15);
 }
 
 * {
@@ -70,11 +76,11 @@ body {
 
 .glow-point {
     position: absolute;
-    width: 600px;
-    height: 600px;
+    width: 650px;
+    height: 650px;
     border-radius: 50%;
-    filter: blur(150px);
-    opacity: 0.04;
+    filter: blur(160px);
+    opacity: 0.12;
 }
 
 .pt-left {
@@ -176,15 +182,19 @@ body {
 }
 
 .glass {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-backdrop-filter);
+    -webkit-backdrop-filter: var(--glass-backdrop-filter);
     border-radius: var(--border-radius-md);
     padding: 30px;
+    box-shadow: var(--glass-shadow);
     transition: var(--transition-smooth);
 }
 
 .glass:hover {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(50, 204, 202, 0.25);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 30px rgba(50, 204, 202, 0.04);
 }
 
 .setup-card {
