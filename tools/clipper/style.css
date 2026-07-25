@@ -507,6 +507,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .clip-time {
@@ -791,4 +792,41 @@ body {
     transition: transform 0.2s ease;
 }
 
+.time-adjuster {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+}
 
+.adj-label {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.btn-adjust {
+    background: transparent;
+    border: none;
+    color: var(--color-accent);
+    cursor: pointer;
+    font-size: 0.68rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-adjust:hover {
+    background: rgba(50, 204, 202, 0.1);
+    color: #fff;
+    transform: scale(1.15);
+}
+
+.time-val {
+    font-family: monospace;
+    color: #fff;
+    font-weight: 600;
+}

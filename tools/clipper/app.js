@@ -327,9 +327,9 @@ A VALID CLIP MUST
 
 ✓ Cover one semantic topic
 
-✓ Begin naturally
+✓ Begin naturally on a grammatically complete sentence
 
-✓ End naturally
+✓ End naturally on a completed sentence or thought
 
 ✓ Be self contained
 
@@ -349,7 +349,13 @@ A CLIP MUST NEVER
 
 ✗ Begin in the middle of a sentence
 
-✗ End before the explanation finishes
+✗ Begin on a mid-sentence conjunction (such as "and", "but", "so", "because", "then", "like")
+
+✗ Begin on an incomplete word or broken phrase
+
+✗ End before the explanation or sentence finishes
+
+✗ End mid-sentence or mid-word
 
 ✗ Depend on another clip
 
@@ -825,10 +831,19 @@ ${serializedSubs}
                         <div class="clip-title-area">
                             <h4>Clip #${clip.clip_number || (index + 1)}: ${clip.title}</h4>
                             <div class="clip-meta">
-                                <span class="clip-time" title="Click to copy start time" onclick="navigator.clipboard.writeText('${startTime}'); alert('Copied start time!')">
-                                    ⏱️ ${startTime.split(',')[0]} → ${endTime.split(',')[0]}
-                                </span>
-                                <span class="clip-duration">Duration: ${durationText}</span>
+                                <div class="time-adjuster" title="Adjust start sentence backward/forward">
+                                    <span class="adj-label">Start:</span>
+                                    <button class="btn-adjust" onclick="window.adjustClipStart(${index}, -1)">◀</button>
+                                    <span class="time-val">${startTime.split(',')[0]}</span>
+                                    <button class="btn-adjust" onclick="window.adjustClipStart(${index}, 1)">▶</button>
+                                </div>
+                                <div class="time-adjuster" title="Adjust end sentence backward/forward">
+                                    <span class="adj-label">End:</span>
+                                    <button class="btn-adjust" onclick="window.adjustClipEnd(${index}, -1)">◀</button>
+                                    <span class="time-val">${endTime.split(',')[0]}</span>
+                                    <button class="btn-adjust" onclick="window.adjustClipEnd(${index}, 1)">▶</button>
+                                </div>
+                                <span class="clip-duration">⏱️ ${durationText}</span>
                             </div>
                         </div>
                         <span class="score-badge ${scoreClass}">Conf: ${confidenceVal}%</span>
@@ -1201,17 +1216,18 @@ ${serializedSubs}
         if (detectedClips.length === 0) return;
 
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Clip Number,Title,Score,Start Time,End Time,Storyline,Reasoning\n";
+        csvContent += "Clip Number,Title,Confidence,Start Time,End Time,Main Topic,Summary,Reason\n";
 
         detectedClips.forEach((clip, index) => {
             const row = [
-                index + 1,
-                `"${clip.title.replace(/"/g, '""')}"`,
-                clip.score,
+                clip.clip_number || (index + 1),
+                `"${(clip.title || '').replace(/"/g, '""')}"`,
+                clip.confidence || 98,
                 clip.startTime,
                 clip.endTime,
-                `"${clip.storyline.replace(/"/g, '""')}"`,
-                `"${clip.reasoning.replace(/"/g, '""')}"`
+                `"${(clip.topic || 'N/A').replace(/"/g, '""')}"`,
+                `"${(clip.summary || 'N/A').replace(/"/g, '""')}"`,
+                `"${(clip.reason || 'N/A').replace(/"/g, '""')}"`
             ].join(",");
             csvContent += row + "\n";
         });
@@ -1224,8 +1240,6 @@ ${serializedSubs}
         link.click();
         document.body.removeChild(link);
     });
-
-
 
     // Reset/Clear button listener to bring back the upload card
     resetBtn.addEventListener('click', () => {
@@ -1242,7 +1256,7 @@ ${serializedSubs}
             <div class="placeholder-state" id="placeholderState">
                 <div class="placeholder-icon">🤖</div>
                 <h3>No Subtitles or Media Uploaded</h3>
-                <p>Upload a video, audio, or SRT file above to extract clips, get local preview slices, and download your edit timelines.</p>
+                <p>Upload a video, audio, or SRT file above to extract clips, read dialogue scripts, and download subtitles.</p>
             </div>
         `;
         
@@ -1252,4 +1266,31 @@ ${serializedSubs}
         controlBar.classList.add('hidden');
         setupSection.classList.remove('hidden');
     });
+
+    // Global Interactive Clip Boundary Adjusters
+    window.adjustClipStart = function(clipIndex, direction) {
+        const clip = detectedClips[clipIndex];
+        if (!clip) return;
+        
+        const currentIdx = parsedSubtitles.findIndex(s => s.index === clip.startId);
+        const targetIdx = currentIdx + direction;
+        
+        if (targetIdx >= 0 && targetIdx < parsedSubtitles.length && targetIdx <= parsedSubtitles.findIndex(s => s.index === clip.endId)) {
+            clip.startId = parsedSubtitles[targetIdx].index;
+            renderClips();
+        }
+    };
+
+    window.adjustClipEnd = function(clipIndex, direction) {
+        const clip = detectedClips[clipIndex];
+        if (!clip) return;
+        
+        const currentIdx = parsedSubtitles.findIndex(s => s.index === clip.endId);
+        const targetIdx = currentIdx + direction;
+        
+        if (targetIdx >= 0 && targetIdx < parsedSubtitles.length && targetIdx >= parsedSubtitles.findIndex(s => s.index === clip.startId)) {
+            clip.endId = parsedSubtitles[targetIdx].index;
+            renderClips();
+        }
+    };
 });
