@@ -272,6 +272,7 @@ You are an expert content analyst.
 Your task is to analyze the provided transcript and extract all meaningful, standalone clips.
 
 IMPORTANT:
+- Extract as many standalone clips as possible (target 4 to 15 clips). If the video is short or you cannot find many natural highlights, you MUST extract at least 4 sequential clips (dividing the video into 4 logical chronological chapters).
 - The transcript may be in ANY language (English, Hindi, Hinglish, Urdu, Spanish, French, Arabic, etc.).
 - First detect the language automatically.
 - NEVER translate the transcript.
