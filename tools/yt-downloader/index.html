@@ -31,7 +31,7 @@
             <a href="../../" class="logo">
                 ac<span>Soft</span><span class="dot">.</span>
             </a>
-            <div class="header-tag">Downloader Tool v1.05</div>
+            <div class="header-tag">Downloader Tool v1.06</div>
         </div>
     </header>
 
@@ -62,52 +62,52 @@
                         </div>
                     </div>
 
-                    <!-- Right: Quality & Formats Panel -->
                     <div class="settings-panel">
                         <div class="settings-group">
-                            <label>Download Format</label>
-                            <div class="toggle-group">
-                                <button class="toggle-btn active" id="formatVideo" data-format="video">
-                                    📹 Video (MP4)
-                                </button>
-                                <button class="toggle-btn" id="formatAudio" data-format="audio">
-                                    🎵 Audio (MP3)
-                                </button>
+                            <label>Choose Download Engine</label>
+                            <p class="engine-desc" style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.5;">Browser CORS protection blocks direct client-side fetches. Select an optimized, secure download engine below to get your file instantly:</p>
+                            
+                            <div class="engine-list" style="display: flex; flex-direction: column; gap: 12px;">
+                                <a id="btnSavefrom" href="#" target="_blank" class="btn btn-primary" style="justify-content: flex-start; gap: 14px; text-decoration: none; padding: 12px 20px;">
+                                    <span style="font-size: 1.2rem;">🚀</span>
+                                    <div style="text-align: left;">
+                                        <div style="font-weight: 700; font-size: 0.88rem; color: #000;">SaveFrom Engine (Recommended)</div>
+                                        <div style="font-size: 0.7rem; opacity: 0.7; font-weight: 500;">Supports 1080p, 720p & MP3 - Fast & Stable</div>
+                                    </div>
+                                </a>
+
+                                <a id="btnY2mate" href="#" target="_blank" class="btn btn-outline" style="justify-content: flex-start; gap: 14px; border: 1px solid var(--color-border); border-radius: var(--border-radius-sm); padding: 12px 20px; text-decoration: none; color: #fff; display: flex; align-items: center; transition: var(--transition-smooth);">
+                                    <span style="font-size: 1.2rem;">⚡</span>
+                                    <div style="text-align: left;">
+                                        <div style="font-weight: 700; font-size: 0.88rem;">Y2Mate Quick Converter</div>
+                                        <div style="font-size: 0.7rem; color: var(--color-text-muted); font-weight: 500;">Best for fast MP3 audio extraction</div>
+                                    </div>
+                                </a>
+
+                                <a id="btnCobalt" href="https://cobalt.tools" target="_blank" class="btn btn-outline" style="justify-content: flex-start; gap: 14px; border: 1px solid var(--color-border); border-radius: var(--border-radius-sm); padding: 12px 20px; text-decoration: none; color: #fff; display: flex; align-items: center; transition: var(--transition-smooth);">
+                                    <span style="font-size: 1.2rem;">🛡️</span>
+                                    <div style="text-align: left;">
+                                        <div style="font-weight: 700; font-size: 0.88rem;">Cobalt Web Interface</div>
+                                        <div style="font-size: 0.7rem; color: var(--color-text-muted); font-weight: 500;">Official Cobalt app (solves Turnstile captcha manually)</div>
+                                    </div>
+                                </a>
                             </div>
                         </div>
-
-                        <div class="settings-group" id="resolutionGroup">
-                            <label>Select Quality</label>
-                            <div class="quality-selector" style="grid-template-columns: 1fr 1fr;">
-                                <button class="quality-btn active" data-quality="720">720p (High Quality)</button>
-                                <button class="quality-btn" data-quality="360">360p (Medium Quality)</button>
-                            </div>
-                        </div>
-
-                        <!-- Action download trigger -->
-                        <button class="btn btn-primary" id="downloadBtn" style="width: 100%;">
-                            <span>Download Media</span>
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Loading overlay inside the card -->
-            <div class="loader-overlay hidden" id="loaderOverlay">
-                <div class="spinner"></div>
-                <p id="loaderText">Fetching download links from server...</p>
-            </div>
         </section>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container footer-bottom">
-            <p>&copy; 2026 acSoft. All rights reserved. Powered by Cobalt & Invidious APIs.</p>
+            <p>&copy; 2026 acSoft. All rights reserved. Powered by Multiple Download Engines.</p>
         </div>
     </footer>
 
     <!-- App Logic script -->
-    <script src="app.js?v=1.05"></script>
+    <script src="app.js?v=1.06"></script>
 </body>
 </html>
