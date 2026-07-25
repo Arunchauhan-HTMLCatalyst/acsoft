@@ -26,9 +26,9 @@
     --color-optional: #f59e0b; /* Amber-500 */
     --color-optional-bg: rgba(245, 158, 11, 0.06);
     
-    /* Serif & Clean Modern Font Stack */
-    --font-heading: 'Playfair Display', 'Lora', Georgia, serif;
-    --font-body: 'Lora', Georgia, serif;
+    /* Google Sans / Outfit Font Stack */
+    --font-heading: 'Outfit', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Outfit', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: SFMono-Regular, Consolas, monospace;
     
     --border-radius-sm: 8px;
