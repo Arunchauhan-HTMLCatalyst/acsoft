@@ -8,14 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const loaderText = document.getElementById('loaderText');
     const qualitySelector = document.querySelector('.quality-selector');
 
-    // Local Flask Server Base URL
-    const API_BASE = 'http://localhost:5000';
+    // API Configurations
+    // REPLACE THIS URL with your actual public Render/Railway URL once deployed
+    const ONLINE_API_BASE = 'https://acsoft-downloader-api.onrender.com';
+    const LOCAL_API_BASE = 'http://localhost:8000'; // FastAPI default port (Uvicorn)
 
     // Form states
     let activeFormat = 'video'; // 'video' or 'audio'
-    let selectedFormatId = 'best'; // Flask backend format ID
+    let selectedFormatId = 'best'; // backend format ID
     let currentVideoId = null;
     let fetchedFormats = [];
+    
+    let API_BASE = ONLINE_API_BASE;
     let serverRunning = false;
 
     // Direct YouTube URL Parser
@@ -33,18 +37,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // Ping Flask backend to check if it's active
-    async function checkServerStatus() {
+    // Dynamic Server Discovery
+    async function discoverActiveServer() {
+        // 1. Try Local FastAPI Server first (port 8000)
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 800);
+            const res = await fetch(`${LOCAL_API_BASE}/api/info?url=test`, { 
+                signal: controller.signal 
+            });
+            API_BASE = LOCAL_API_BASE;
+            serverRunning = true;
+            console.log("Connection established with local FastAPI backend.");
+            return;
+        } catch (e) {
+            // Local not running, ignore
+        }
+
+        // 2. Try Online FastAPI Server
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 1500);
-            
-            const res = await fetch(`${API_BASE}/api/info?url=test`, { 
+            const res = await fetch(`${ONLINE_API_BASE}/api/info?url=test`, { 
                 signal: controller.signal 
             });
+            API_BASE = ONLINE_API_BASE;
             serverRunning = true;
+            console.log("Connection established with online FastAPI backend.");
         } catch (e) {
             serverRunning = false;
+            console.warn("No active API backend detected. Fallback route enabled.");
         }
     }
 
@@ -68,12 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedFormatId = 'bestaudio';
     });
 
-    // Dynamically render format resolution choices
+    // Dynamically render quality choices
     function renderQualityButtons() {
         qualitySelector.innerHTML = '';
         
         if (serverRunning && fetchedFormats.length > 0) {
-            // Render actual formats returned by yt-dlp backend
+            // Render formats returned by the online/local API
             fetchedFormats.forEach((f, idx) => {
                 const btn = document.createElement('button');
                 btn.className = `quality-btn ${idx === 0 ? 'active' : ''}`;
@@ -92,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qualitySelector.appendChild(btn);
             });
         } else {
-            // Fallback default buttons if server is not online
+            // Fallback default buttons
             const defaults = [
                 { id: 'bestvideo[height<=1080]+bestaudio/best', label: '1080p (HD)' },
                 { id: 'bestvideo[height<=720]+bestaudio/best', label: '720p' },
@@ -131,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             previewCard.classList.remove('hidden');
             
-            // Query Flask server for dynamic metadata
-            loaderText.textContent = "Connecting to local Python server...";
+            // Connect and check server
+            loaderText.textContent = "Connecting to API backend...";
             loaderOverlay.classList.remove('hidden');
             
-            await checkServerStatus();
+            await discoverActiveServer();
             
             if (serverRunning) {
                 try {
@@ -146,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fetchedFormats = data.formats || [];
                     }
                 } catch (err) {
-                    console.error("Failed to fetch info from local server:", err);
+                    console.error("Failed to fetch info from API server:", err);
                 }
             }
             
@@ -167,16 +189,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cleanUrl = `https://www.youtube.com/watch?v=${currentVideoId}`;
         
-        // Double check server status on click
-        await checkServerStatus();
+        // Final server status check before trigger
+        await discoverActiveServer();
 
         if (serverRunning) {
-            // Direct premium streaming via Flask backend
+            // Direct streaming download via online/local FastAPI backend
             const downloadUrl = `${API_BASE}/api/download?url=${encodeURIComponent(cleanUrl)}&format=${selectedFormatId}`;
             window.open(downloadUrl, '_blank');
         } else {
-            // Fallback: Alert and open SaveFrom redirect if server is not online
-            alert("Local Python server is not running on port 5000.\nPlease launch the server by running:\npython3 server.py\n\nRedirecting to secure web fallback (SaveFrom.net)...");
+            // Fallback: Alert and open SaveFrom redirect if no server is active
+            alert("No active API server found online or locally.\n\nRedirecting to secure web fallback (SaveFrom.net)...");
             const fallbackUrl = `https://savefrom.net/?url=${encodeURIComponent(cleanUrl)}`;
             window.open(fallbackUrl, '_blank');
         }
