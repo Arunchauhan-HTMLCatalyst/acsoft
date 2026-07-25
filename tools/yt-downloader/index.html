@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader | Ad-Free Video & Audio Downloader | acSoft.</title>
+    <meta name="description" content="Download YouTube videos in high quality (1080p, 720p) or export audio-only formats. Purely ad-free, secure, and fast with instant thumbnail previews.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../../logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css?v=1.0">
+</head>
+<body>
+
+    <!-- Ambient glowing background grids -->
+    <div class="glow-bg">
+        <div class="glow-point pt-left"></div>
+        <div class="glow-point pt-right"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container nav-container">
+            <a href="../../" class="logo">
+                ac<span>Soft</span><span class="dot">.</span>
+            </a>
+            <div class="header-tag">Downloader Tool v1.0</div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container container">
+        <section class="downloader-card glass">
+            <div class="card-header text-center">
+                <h2>YouTube Downloader</h2>
+                <p class="subtitle">Ad-Free, Fast, and High Quality Video & Audio Converter</p>
+            </div>
+            
+            <!-- Link input block -->
+            <div class="input-block">
+                <div class="input-wrapper">
+                    <span class="input-icon">🔗</span>
+                    <input type="text" id="youtubeUrl" placeholder="Paste YouTube link here... (e.g., https://www.youtube.com/watch?v=...)" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Dynamic Preview & Quality Selector (hidden by default) -->
+            <div class="preview-card hidden" id="previewCard">
+                <div class="preview-grid">
+                    <!-- Left: High-Res Thumbnail -->
+                    <div class="thumbnail-wrapper">
+                        <img id="videoThumbnail" src="" alt="YouTube Video Thumbnail">
+                        <div class="thumbnail-overlay">
+                            <span class="play-icon">▶</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quality & Formats Panel -->
+                    <div class="settings-panel">
+                        <div class="settings-group">
+                            <label>Download Format</label>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" id="formatVideo" data-format="video">
+                                    📹 Video (MP4)
+                                </button>
+                                <button class="toggle-btn" id="formatAudio" data-format="audio">
+                                    🎵 Audio (MP3)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="settings-group" id="resolutionGroup">
+                            <label>Select Quality</label>
+                            <div class="quality-selector">
+                                <button class="quality-btn active" data-quality="1080">1080p (HD)</button>
+                                <button class="quality-btn" data-quality="720">720p</button>
+                                <button class="quality-btn" data-quality="480">480p</button>
+                                <button class="quality-btn" data-quality="360">360p</button>
+                            </div>
+                        </div>
+
+                        <!-- Action download trigger -->
+                        <button class="btn btn-primary" id="downloadBtn">
+                            <span>Get Download Link</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading overlay inside the card -->
+            <div class="loader-overlay hidden" id="loaderOverlay">
+                <div class="spinner"></div>
+                <p id="loaderText">Fetching download links from server...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <p>&copy; 2026 acSoft. All rights reserved. Powered by Cobalt API.</p>
+        </div>
+    </footer>
+
+    <!-- App Logic script -->
+    <script src="app.js?v=1.0"></script>
+</body>
+</html>
