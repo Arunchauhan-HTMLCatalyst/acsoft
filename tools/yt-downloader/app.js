@@ -84,60 +84,72 @@ document.addEventListener('DOMContentLoaded', () => {
         loaderText.textContent = "Connecting to Cobalt API server...";
         loaderOverlay.classList.remove('hidden');
 
-        // Body parameters
+        // Body parameters (supporting both legacy v7/v8 and modern v10 specifications)
         const requestPayload = {
             url: rawUrl,
-            vQuality: activeFormat === 'video' ? activeQuality : 'max',
-            isAudioOnly: activeFormat === 'audio',
+            videoQuality: activeFormat === 'video' ? activeQuality : '1080',
+            vQuality: activeFormat === 'video' ? activeQuality : '1080', // legacy fallback
+            downloadMode: activeFormat === 'audio' ? 'audio' : 'auto',
+            isAudioOnly: activeFormat === 'audio', // legacy fallback
+            isAudio: activeFormat === 'audio', // legacy fallback
             aFormat: 'mp3',
+            audioFormat: 'mp3', // legacy fallback
             filenamePattern: 'basic'
         };
 
-        // Attempt download using multiple public Cobalt API endpoints for high reliability
-        const endpoints = [
-            'https://api.cobalt.tools/',
-            'https://co.wuk.sh/'
+        // Active community public instances of Cobalt
+        const instances = [
+            'https://api.cobalt.tools',
+            'https://co.wuk.sh',
+            'https://cobalt.k6.cz',
+            'https://api.cobalt.best',
+            'https://cobalt.perennialte.ch'
         ];
 
         let success = false;
         let errorMessage = "Unable to fetch download link. Please try again later.";
 
-        for (const endpoint of endpoints) {
-            try {
-                loaderText.textContent = `Requesting download link from endpoint...`;
-                
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestPayload)
-                });
+        for (const instance of instances) {
+            const paths = [instance, `${instance}/api/json`];
+            
+            for (const urlPath of paths) {
+                try {
+                    loaderText.textContent = `Connecting to ${new URL(instance).hostname}...`;
+                    
+                    const response = await fetch(urlPath, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestPayload)
+                    });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result && result.url) {
-                        // Success: open download stream URL in a new tab to trigger browser download
-                        const a = document.createElement('a');
-                        a.href = result.url;
-                        a.target = '_blank';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        
-                        success = true;
-                        break;
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result && result.url) {
+                            // Success: open download stream URL in a new tab to trigger browser download
+                            const a = document.createElement('a');
+                            a.href = result.url;
+                            a.target = '_blank';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            
+                            success = true;
+                            break;
+                        }
+                    } else {
+                        const errData = await response.json().catch(() => ({}));
+                        if (errData && errData.text) {
+                            errorMessage = errData.text;
+                        }
                     }
-                } else {
-                    const errData = await response.json().catch(() => ({}));
-                    if (errData && errData.text) {
-                        errorMessage = errData.text;
-                    }
+                } catch (err) {
+                    console.warn(`Endpoint ${urlPath} failed:`, err);
                 }
-            } catch (err) {
-                console.warn(`Endpoint ${endpoint} failed:`, err);
             }
+            if (success) break;
         }
 
         loaderOverlay.classList.add('hidden');
