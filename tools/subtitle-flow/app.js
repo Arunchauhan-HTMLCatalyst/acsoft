@@ -617,6 +617,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('model', 'whisper-large-v3');
                 formData.append('response_format', 'verbose_json');
                 
+                // Request precise word-level timestamps (granularities) to ensure exact sync
+                formData.append('timestamp_granularities[]', 'word');
+                formData.append('timestamp_granularities[]', 'segment');
+                
+                // Instruct AI context prediction for exact word detection (capitalization, technical names, Hinglish/Hindi accents, proper spelling)
+                formData.append('prompt', 'Transcribe the audio exactly. Predict and correct spelling of spoken words, technical terms, names, and mixed English/Hindi (Hinglish) phrases. Use proper punctuation, sentence case, and capitalization.');
+                
                 showProcessingLoader("AI Transcription starting (Direct Groq Whisper)...", 60);
 
                 const directApiKey = 'gsk_' + '342nwl' + 'MZirNET' + 'Wq6knYj' + 'WGdyb3F' + 'Y2fvnaj' + 'q3TrybP' + '2d4f5KD' + 'BuGz';
@@ -792,9 +799,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Group close words together. Trigger split if:
             // 1. Adding this word exceeds the character limit
-            // 2. Or there is a significant pause between words (> 1.2 seconds)
+            // 2. Or there is a significant pause between words (> 0.9 seconds)
             const lastWord = currentGroup[currentGroup.length - 1];
-            const hasPause = lastWord && (wordObj.start - lastWord.end > 1.2);
+            const hasPause = lastWord && (wordObj.start - lastWord.end > 0.9);
 
             if (currentGroup.length > 0 && (currentLength + wordLengthWithSpace > maxChars || hasPause)) {
                 const groupText = currentGroup.map(w => w.word).join(' ');
