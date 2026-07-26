@@ -143,6 +143,18 @@ body {
     color: #fff;
 }
 
+.header-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
 .header-right {
     display: flex;
     gap: 12px;
