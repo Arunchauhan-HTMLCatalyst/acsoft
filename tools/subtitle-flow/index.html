@@ -31,7 +31,7 @@
             <a href="../" class="logo">
                 ac<span>Soft</span><span class="dot">.</span>
             </a>
-            <div class="header-tag">SubtitleFlow AI v1.23</div>
+            <div class="header-tag">SubtitleFlow AI v1.25</div>
             <div class="header-right">
             </div>
         </div>
@@ -358,6 +358,8 @@
                     <div class="viewport-container">
                         <div class="canvas-wrapper" id="canvasWrapper">
                             <canvas id="previewCanvas"></canvas>
+                            <!-- HTML overlay for real-time playbacks & crisp animations -->
+                            <div id="previewSubtitleOverlay" class="subtitle-overlay"></div>
                             <!-- Guides overlays overlaying the canvas -->
                             <div class="guide-overlay hidden" id="shortsGuideOverlay">
                                 <div class="shorts-ui-sim"></div>
@@ -436,6 +438,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <!-- App Logic Script -->
-    <script src="app.js?v=1.23"></script>
+    <script src="app.js?v=1.25"></script>
 </body>
 </html>

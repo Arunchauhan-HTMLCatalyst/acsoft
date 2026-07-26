@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewCanvas = document.getElementById('previewCanvas');
     const ctx = previewCanvas.getContext('2d');
     const canvasWrapper = document.getElementById('canvasWrapper');
+    const previewSubtitleOverlay = document.getElementById('previewSubtitleOverlay');
     
     const btnPlayPause = document.getElementById('btnPlayPause');
     const timelineSlider = document.getElementById('timelineSlider');
@@ -261,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastPlayTimestamp = 0;
     let lastAudioPlayerTime = 0;
     let isMuted = false;
+    let isRecording = false;
     let activeAspect = '9:16';
     let activeGuides = { shorts: false, reels: false, tiktok: false };
     
@@ -997,11 +999,150 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Find active subtitle
         const activeSub = subtitles.find(s => time >= s.start && time <= s.end);
         if (activeSub) {
-            drawSubtitles(ctx, activeSub, time, styleSettings, w, h);
+            if (isRecording) {
+                // Render directly inside the Canvas to burn subtitles into the exported MP4 video file
+                drawSubtitles(ctx, activeSub, time, styleSettings, w, h);
+                previewSubtitleOverlay.innerHTML = '';
+            } else {
+                // Render responsive vector captions inside the HTML overlay container
+                renderHTMLSubtitles(activeSub, time, styleSettings);
+            }
             highlightActiveTimelineCard(activeSub);
         } else {
+            previewSubtitleOverlay.innerHTML = '';
             clearActiveTimelineHighlight();
         }
+    }
+
+    // Render Subtitles in HTML Overlay (Previews)
+    function renderHTMLSubtitles(segment, time, settings) {
+        previewSubtitleOverlay.innerHTML = '';
+        previewSubtitleOverlay.className = 'subtitle-overlay';
+        
+        if (!segment) return;
+        
+        let justifyContent = 'center';
+        if (settings.alignment === 'left') justifyContent = 'flex-start';
+        if (settings.alignment === 'right') justifyContent = 'flex-end';
+        
+        if (settings.activePreset === 'instagram_focus') {
+            previewSubtitleOverlay.classList.add('style-igfocus');
+        } else if (settings.activePreset === 'minimalist_bar') {
+            previewSubtitleOverlay.classList.add('style-minbar');
+        }
+        
+        const phraseDiv = document.createElement('div');
+        phraseDiv.className = 'subtitle-phrase';
+        phraseDiv.style.justifyContent = justifyContent;
+        
+        const wrapperHeight = canvasWrapper.clientHeight || 500;
+        const scaleFactor = wrapperHeight / previewCanvas.height;
+        const scaledBottomMargin = (settings.bottomMargin || 100) * scaleFactor;
+        previewSubtitleOverlay.style.paddingBottom = `${scaledBottomMargin}px`;
+        
+        const words = segment.words || [];
+        if (words.length > 0) {
+            words.forEach((w) => {
+                const span = document.createElement('span');
+                span.className = 'subtitle-word';
+                
+                const isCustomHighlighted = w.word.startsWith('**') && w.word.endsWith('**');
+                const rawText = isCustomHighlighted ? w.word.slice(2, -2) : w.word;
+                const cleanWordText = settings.uppercase ? rawText.toUpperCase() : rawText;
+                
+                // Set word spacing padding (matches multiplier used in Canvas)
+                span.textContent = cleanWordText + ' ';
+                span.style.padding = `0 ${w.word.trim().length > 0 ? 0.22 : 0}em`;
+                
+                span.style.fontFamily = settings.fontFamily;
+                span.style.fontSize = `${settings.fontSize * scaleFactor}px`;
+                span.style.fontWeight = settings.fontWeight || 'bold';
+                
+                if (settings.strokeWidth > 0 && settings.activePreset !== 'kalakaar_capsule') {
+                    const scaledStrokeWidth = Math.max(1, settings.strokeWidth * scaleFactor);
+                    span.style.webkitTextStroke = `${scaledStrokeWidth}px ${settings.strokeColor}`;
+                    span.style.textStroke = `${scaledStrokeWidth}px ${settings.strokeColor}`;
+                }
+                
+                if (settings.shadow === 'soft') {
+                    span.style.textShadow = '2px 2px 5px rgba(0,0,0,0.6)';
+                } else if (settings.shadow === 'hard') {
+                    span.style.textShadow = '3px 3px 0px rgba(0,0,0,0.9)';
+                } else {
+                    span.style.textShadow = 'none';
+                }
+                
+                const isActive = (time >= w.start && time <= w.end);
+                if (isActive) {
+                    span.classList.add('active');
+                    
+                    if (settings.animation === 'pop') {
+                        span.classList.add('anim-pop');
+                    } else if (settings.animation === 'bounce') {
+                        span.classList.add('anim-bounce');
+                    } else if (settings.animation === 'fade') {
+                        span.classList.add('anim-fade');
+                    }
+                    
+                    span.style.animationDuration = `${0.2 / (settings.animSpeed || 1.0)}s`;
+                    
+                    if (settings.activePreset === 'kalakaar_capsule') {
+                        span.classList.add('word-active-kalakaar');
+                        span.style.background = settings.highlightColor;
+                        span.style.color = '#ffffff';
+                    } else if (settings.activePreset === 'mrbeast') {
+                        span.classList.add('word-active-mrbeast');
+                        span.style.color = settings.highlightColor;
+                    } else {
+                        span.style.color = settings.highlightColor;
+                    }
+                    
+                    const cleanWordLookup = rawText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
+                    const emoji = EMOJI_MAP[cleanWordLookup];
+                    if (emoji) {
+                        const emojiSpan = document.createElement('span');
+                        emojiSpan.textContent = emoji;
+                        emojiSpan.style.position = 'absolute';
+                        emojiSpan.style.left = '50%';
+                        emojiSpan.style.transform = 'translateX(-50%)';
+                        emojiSpan.style.fontSize = `${settings.fontSize * 0.8 * scaleFactor}px`;
+                        emojiSpan.style.pointerEvents = 'none';
+                        emojiSpan.style.zIndex = '15';
+                        
+                        const duration = Math.max(0.1, w.end - w.start);
+                        const progress = Math.min(1, Math.max(0, (time - w.start) / duration));
+                        const bounceY = Math.abs(Math.sin(progress * Math.PI)) * 14 * scaleFactor;
+                        const scaledEmojiTop = -(settings.fontSize * 0.95 * scaleFactor) - bounceY;
+                        
+                        emojiSpan.style.top = `${scaledEmojiTop}px`;
+                        span.style.position = 'relative';
+                        span.appendChild(emojiSpan);
+                    }
+                } else if (isCustomHighlighted) {
+                    span.style.color = settings.highlightColor;
+                } else {
+                    span.style.color = settings.textColor;
+                }
+                
+                phraseDiv.appendChild(span);
+            });
+        } else {
+            const textSpan = document.createElement('span');
+            const cleanText = settings.uppercase ? segment.text.toUpperCase() : segment.text;
+            textSpan.textContent = cleanText;
+            textSpan.style.fontFamily = settings.fontFamily;
+            textSpan.style.fontSize = `${settings.fontSize * scaleFactor}px`;
+            textSpan.style.color = settings.textColor;
+            textSpan.style.fontWeight = settings.fontWeight || 'bold';
+            
+            if (settings.strokeWidth > 0) {
+                const scaledStrokeWidth = Math.max(1, settings.strokeWidth * scaleFactor);
+                textSpan.style.webkitTextStroke = `${scaledStrokeWidth}px ${settings.strokeColor}`;
+            }
+            phraseDiv.appendChild(textSpan);
+        }
+        
+        previewSubtitleOverlay.appendChild(phraseDiv);
     }
 
     function drawSubtitles(ctx, segment, time, settings, canvasW, canvasH) {
@@ -1584,6 +1725,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPlayPause.textContent = '▶';
         audioPlayer.currentTime = 0;
         
+        // Enable isRecording flag to route subtitles to canvas
+        isRecording = true;
+        
         // Show Export Progress
         showProcessingLoader("Encoding High-Quality Subtitle MP4...", 0);
         
@@ -1614,6 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         recorder.onstop = () => {
+            isRecording = false; // Reset flag on stop
             const blob = new Blob(chunks, { type: mime });
             const url = URL.createObjectURL(blob);
             
@@ -1644,6 +1789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (audioPlayer.ended || audioPlayer.currentTime >= duration) {
                 clearInterval(progressInterval);
                 audioPlayer.pause();
+                isRecording = false;
                 recorder.stop();
             }
         }, 300);

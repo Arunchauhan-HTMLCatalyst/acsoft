@@ -1296,3 +1296,111 @@ canvas {
         font-size: 2.2rem;
     }
 }
+
+/* ========================================================================== */
+/* HTML5 Hybrid Subtitle Overlay & GPU-Accelerated Animations */
+/* ========================================================================== */
+.subtitle-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    box-sizing: border-box;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.subtitle-phrase {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    width: 92%;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.subtitle-word {
+    display: inline-block;
+    white-space: pre-wrap;
+    text-align: center;
+    transform-origin: center center;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Presets Specific Styles */
+.word-active-mrbeast {
+    animation: mrbeast-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes mrbeast-pop {
+    0% { transform: rotate(-3.4deg) scale(1.0); }
+    100% { transform: rotate(-3.4deg) scale(1.22); }
+}
+
+.word-active-kalakaar {
+    border-radius: 12px;
+    padding: 3px 10px;
+    margin: 0 4px;
+    -webkit-text-stroke: 0px !important;
+    animation: kalakaar-pop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards;
+}
+
+@keyframes kalakaar-pop {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.1); }
+}
+
+/* IG Focus Fading styling */
+.style-igfocus .subtitle-word {
+    opacity: 0.35;
+}
+
+.style-igfocus .subtitle-word.active {
+    opacity: 1.0 !important;
+    animation: ig-focus-pop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
+}
+
+@keyframes ig-focus-pop {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.15); }
+}
+
+/* Minimalist Bar strip */
+.style-minbar {
+    background: rgba(0, 0, 0, 0.48);
+    border-radius: 14px;
+    padding: 8px 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* Standard/Generic Word Animations */
+.anim-pop.active {
+    animation: generic-pop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes generic-pop {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.15); }
+}
+
+.anim-bounce.active {
+    animation: generic-bounce 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes generic-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+.anim-fade.active {
+    animation: generic-fade 0.2s ease-out forwards;
+}
+@keyframes generic-fade {
+    0% { opacity: 0.55; }
+    100% { opacity: 1.0; }
+}
