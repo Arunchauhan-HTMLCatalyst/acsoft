@@ -61,6 +61,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const aspectButtons = document.querySelectorAll('.aspect-btn');
     const guideButtons = document.querySelectorAll('.guide-btn');
     
+    // Auto-Emoji keyword translations dictionary
+    const EMOJI_MAP = {
+        'money': '💸', 'cash': '💵', 'rich': '🤑', 'dollar': '💵', 'rupee': '🪙', 'gold': '🪙',
+        'grow': '📈', 'growth': '📈', 'scale': '📈', 'success': '🏆', 'win': '🏆', 'champion': '🏆',
+        'time': '⏰', 'clock': '⌚', 'second': '⏱️', 'minute': '⏱️', 'hour': '⌛', 'fast': '⚡',
+        'fire': '🔥', 'hot': '🔥', 'burn': '🔥', 'amazing': '🤩', 'wow': '😲', 'awesome': '🙌',
+        'love': '❤️', 'heart': '❤️', 'life': '🌱', 'mind': '💡', 'brain': '🧠', 'think': '🤔',
+        'idea': '💡', 'thought': '💭', 'creative': '🎨', 'art': '🎨', 'music': '🎵', 'song': '🎵',
+        'rocket': '🚀', 'launch': '🚀', 'space': '🌌', 'sky': '🌌', 'star': '⭐', 'moon': '🌙',
+        'target': '🎯', 'goal': '🎯', 'focus': '🔍', 'warning': '⚠️', 'danger': '⚠️', 'alert': '🚨',
+        'phone': '📱', 'mobile': '📱', 'call': '📞', 'app': '📲', 'web': '🌐', 'website': '🌐',
+        'computer': '💻', 'laptop': '💻', 'code': '💻', 'programmer': '👨‍💻', 'hacker': '👨‍💻',
+        'laugh': '😂', 'funny': '🤣', 'joke': '🤡', 'haha': '😆', 'happy': '😊', 'smile': '😀',
+        'sad': '😢', 'cry': '😭', 'pain': '💔', 'hurt': '🤕', 'game': '🎮', 'gaming': '🕹️',
+        'food': '🍔', 'eat': '🍕', 'hungry': '🤤', 'car': '🚗', 'drive': '🏎️', 'speed': '💨',
+        'world': '🌍', 'earth': '🗺️', 'global': '🌐', 'power': '💪', 'strong': '🏋️', 'gym': '🏋️',
+        'muscle': '💪', 'book': '📚', 'read': '📖', 'study': '✏️', 'learn': '🎓', 'school': '🏫',
+        'video': '📹', 'camera': '📷', 'photo': '📸', 'shoot': '🎬', 'movie': '🎬', 'film': '🎞️',
+        'subscribe': '🔔', 'bell': '🔔', 'like': '👍', 'share': '📢', 'comment': '💬', 'chat': '💬',
+        'stop': '🛑', 'cancel': '❌', 'yes': '✅', 'no': '❌', 'correct': '✅', 'wrong': '❌',
+        'lock': '🔒', 'key': '🔑', 'secure': '🛡️', 'shield': '🛡️', 'hack': '🕵️', 'secret': '🤫',
+        'gift': '🎁', 'box': '📦', 'present': '🎁', 'party': '🎉', 'celebrate': '🎊', 'balloon': '🎈',
+        'water': '💧', 'sea': '🌊', 'ocean': '🌊', 'fish': '🐟', 'dog': '🐶', 'cat': '🐱',
+        'bird': '🐦', 'tree': '🌳', 'flower': '🌸', 'sun': '☀️', 'rain': '🌧️', 'snow': '❄️',
+        'wind': '💨', 'storm': '⛈️', 'cloud': '☁️', 'light': '⚡', 'thunder': '⚡', 'flash': '📸'
+    };
+
     // Platform Presets Definitions
     const PRESETS = {
         hormozi: {
@@ -225,13 +252,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let subtitles = [];
     let styleSettings = { ...PRESETS.hormozi, activePreset: 'hormozi' };
     
-    // Audio Player setup
-    let audioPlayer = new Audio();
+    // Audio Player setup & High-Precision playhead timing trackers (prevents HTML5 clock drift & stuttering)
+    let audioPlayer = document.createElement('video');
+    audioPlayer.playsInline = true;
+    audioPlayer.webkitPlaysInline = true;
     let audioUrl = null;
     let animationFrameId = null;
+    let lastPlayTimestamp = 0;
+    let lastAudioPlayerTime = 0;
     let isMuted = false;
     let activeAspect = '9:16';
     let activeGuides = { shorts: false, reels: false, tiktok: false };
+    
+    // High-precision clock calibration listeners to eliminate any millisecond playhead desync
+    audioPlayer.addEventListener('play', () => {
+        lastAudioPlayerTime = audioPlayer.currentTime;
+        lastPlayTimestamp = performance.now();
+    });
+    audioPlayer.addEventListener('pause', () => {
+        lastAudioPlayerTime = audioPlayer.currentTime;
+        lastPlayTimestamp = 0;
+    });
+    audioPlayer.addEventListener('seeking', () => {
+        lastAudioPlayerTime = audioPlayer.currentTime;
+        lastPlayTimestamp = performance.now();
+    });
+    audioPlayer.addEventListener('timeupdate', () => {
+        lastAudioPlayerTime = audioPlayer.currentTime;
+        lastPlayTimestamp = performance.now();
+    });
     
     // Auto-save timer
     let autoSaveTimer = null;
@@ -623,7 +672,8 @@ document.addEventListener('DOMContentLoaded', () => {
             language: 'English',
             aspectRatio: '9:16',
             styleSettings: { ...PRESETS.hormozi, activePreset: 'hormozi' },
-            subtitles: []
+            subtitles: [],
+            hasVideo: file.type.startsWith('video/')
         };
 
         if (ext === 'srt') {
@@ -909,15 +959,40 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 1. Draw Background
         const bg = bgSelect.value;
-        if (bg === 'transparent') {
-            ctx.clearRect(0, 0, w, h);
+        if (activeProject && activeProject.hasVideo) {
+            // Draw video frame with cover fit to fill the canvas crop nicely without stretching
+            try {
+                const videoW = audioPlayer.videoWidth || w;
+                const videoH = audioPlayer.videoHeight || h;
+                const scale = Math.max(w / videoW, h / videoH);
+                const nw = videoW * scale;
+                const nh = videoH * scale;
+                const cx = (w - nw) / 2;
+                const cy = (h - nh) / 2;
+                ctx.drawImage(audioPlayer, cx, cy, nw, nh);
+            } catch (e) {
+                // Fallback to solid bg if video frame extraction fails temporarily
+                ctx.fillStyle = bg === 'transparent' ? '#000000' : bg;
+                ctx.fillRect(0, 0, w, h);
+            }
         } else {
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, w, h);
+            // Standard chroma key green screen or chosen solid background color (for SRT/Audio files)
+            if (bg === 'transparent') {
+                ctx.clearRect(0, 0, w, h);
+            } else {
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+            }
         }
         
+        // Retrieve exact sub-millisecond playhead timestamp using performance.now() clock interpolation
+        let baseTime = audioPlayer.currentTime;
+        if (!audioPlayer.paused && lastPlayTimestamp > 0) {
+            const elapsed = (performance.now() - lastPlayTimestamp) / 1000;
+            baseTime = lastAudioPlayerTime + elapsed;
+        }
         // Apply 80ms sync calibration offset so highlights match the spoken beat exactly
-        const time = audioPlayer.currentTime + 0.08;
+        const time = baseTime + 0.08;
         
         // 2. Find active subtitle
         const activeSub = subtitles.find(s => time >= s.start && time <= s.end);
@@ -980,7 +1055,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const wordSpacingMultiplier = isAnimatedPreset ? 1.6 : 1.1;
             const wordSpacing = ctx.measureText(" ").width * wordSpacingMultiplier;
             
-            const widths = words.map(w => ctx.measureText(settings.uppercase ? w.word.toUpperCase() : w.word).width);
+            const widths = words.map(w => {
+                let txt = w.word;
+                if (txt.startsWith('**') && txt.endsWith('**')) txt = txt.slice(2, -2);
+                return ctx.measureText(settings.uppercase ? txt.toUpperCase() : txt).width;
+            });
             totalWidth = widths.reduce((a, b) => a + b, 0) + (words.length - 1) * wordSpacing;
             
             let startX = canvasW / 2 - totalWidth / 2;
@@ -988,7 +1067,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (settings.alignment === 'right') startX = canvasW - totalWidth - 50;
             
             words.forEach((w, index) => {
-                const wordText = settings.uppercase ? w.word.toUpperCase() : w.word;
+                let isCustomHighlighted = w.word.startsWith('**') && w.word.endsWith('**');
+                let rawWordText = isCustomHighlighted ? w.word.slice(2, -2) : w.word;
+                const wordText = settings.uppercase ? rawWordText.toUpperCase() : rawWordText;
+                
                 const wordWidth = widths[index];
                 const wordCenterX = startX + wordWidth / 2;
                 
@@ -998,22 +1080,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (settings.activePreset === 'instagram_focus') {
                     // Instagram Focus: Non-active words are faded out
-                    if (isActive) {
+                    if (isActive || isCustomHighlighted) {
                         ctx.globalAlpha = 1.0;
                         ctx.fillStyle = settings.highlightColor;
                         
                         // Active word scales up slightly
-                        ctx.translate(wordCenterX, y);
-                        ctx.scale(1.15 * settings.animSpeed, 1.15 * settings.animSpeed);
-                        ctx.translate(-wordCenterX, -y);
+                        if (isActive) {
+                            ctx.translate(wordCenterX, y);
+                            ctx.scale(1.15 * settings.animSpeed, 1.15 * settings.animSpeed);
+                            ctx.translate(-wordCenterX, -y);
+                        }
                     } else {
                         ctx.globalAlpha = 0.35;
                         ctx.fillStyle = settings.textColor;
                     }
-                } else if (isActive) {
+                } else if (isActive || isCustomHighlighted) {
                     ctx.fillStyle = settings.highlightColor;
                     
-                    if (settings.activePreset === 'kalakaar_capsule') {
+                    if (isActive && settings.activePreset === 'kalakaar_capsule') {
                         // Kalakaar Capsule: draw capsule background behind active word
                         const capPaddingH = 16;
                         const capPaddingV = 10;
@@ -1062,6 +1146,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     ctx.strokeText(wordText, wordCenterX, y);
                 }
                 ctx.fillText(wordText, wordCenterX, y);
+                
+                // Render bouncing context-emoji above active word if keyword matches EMOJI_MAP
+                if (isActive) {
+                    const cleanWordLookup = w.word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
+                    const emoji = EMOJI_MAP[cleanWordLookup];
+                    if (emoji) {
+                        ctx.save();
+                        // Reset shadow & formatting for the emoji render
+                        ctx.shadowColor = 'transparent';
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                        ctx.strokeStyle = 'transparent';
+                        ctx.lineWidth = 0;
+                        
+                        // Calculate bounce Y offset based on spoken progress sine wave
+                        const duration = Math.max(0.1, w.end - w.start);
+                        const progress = Math.min(1, Math.max(0, (time - w.start) / duration));
+                        const bounceY = Math.abs(Math.sin(progress * Math.PI)) * 14;
+                        
+                        // Position emoji above the word
+                        const emojiY = y - parseInt(settings.fontSize) * 0.95 - bounceY;
+                        
+                        ctx.font = `${parseInt(settings.fontSize) * 0.85}px Arial, "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+                        ctx.fillText(emoji, wordCenterX, emojiY);
+                        ctx.restore();
+                    }
+                }
                 
                 ctx.restore();
                 startX += wordWidth + wordSpacing;
