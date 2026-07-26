@@ -468,20 +468,37 @@ document.addEventListener('DOMContentLoaded', () => {
             offset = 0,
             pos = 0;
 
+        function writeString(str) {
+            for (let i = 0; i < str.length; i++) {
+                view.setUint8(offset, str.charCodeAt(i));
+                offset++;
+            }
+        }
+
+        function setUint16(data) {
+            view.setUint16(offset, data, true);
+            offset += 2;
+        }
+
+        function setUint32(data) {
+            view.setUint32(offset, data, true);
+            offset += 4;
+        }
+
         // write WAV header
-        setUint32(0x46464946);                         // "RIFF"
-        setUint32(length - 8);                         // file length - 8
-        setUint32(0x45564157);                         // "WAVE"
-        setUint32(0x20746d66);                         // "fmt " chunk
-        setUint32(16);                                 // chunk length
-        setUint16(1);                                  // sample format (raw)
-        setUint16(numOfChan);                          // channel count
-        setUint32(buffer.sampleRate);                  // sample rate
-        setUint32(buffer.sampleRate * 2 * numOfChan); // byte rate (sample rate * block align)
-        setUint16(numOfChan * 2);                      // block align (channel count * bytes per sample)
-        setUint16(16);                                 // bits per sample
-        setUint32(0x61746164);                         // "data" - chunk
-        setUint32(buffer.length * 2 * numOfChan);      // chunk length
+        writeString("RIFF");
+        setUint32(length - 8);
+        writeString("WAVE");
+        writeString("fmt ");
+        setUint32(16);
+        setUint16(1);
+        setUint16(numOfChan);
+        setUint32(buffer.sampleRate);
+        setUint32(buffer.sampleRate * 2 * numOfChan);
+        setUint16(numOfChan * 2);
+        setUint16(16);
+        writeString("data");
+        setUint32(buffer.length * 2 * numOfChan);
 
         for(i=0; i<buffer.numberOfChannels; i++)
             channels.push(buffer.getChannelData(i));
@@ -497,16 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         return new Blob([view], {type: 'audio/wav'});
-
-        function setUint16(data) {
-            view.setUint16(offset, data, true);
-            offset += 2;
-        }
-
-        function setUint32(data) {
-            view.setUint32(offset, data, true);
-            offset += 4;
-        }
     }
 
     // Helper: Decode audio data compatibly for Safari and older WebKit engines
