@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for(i=0; i<numOfChan; i++) {             // interleave channels
                 sample = Math.max(-1, Math.min(1, channels[i][pos])); // clamp
                 sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF); // scale to 16-bit signed int
-                view.setInt16(44 + offset, sample, true); // write 16-bit sample
+                view.setInt16(offset, sample, true); // write 16-bit sample directly to the running offset
                 offset += 2;
             }
             pos++;
@@ -471,14 +471,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Blob([view], {type: 'audio/wav'});
 
         function setUint16(data) {
-            view.setUint16(44 - 44 + offset, data, true);
+            view.setUint16(offset, data, true);
             offset += 2;
         }
 
         function setUint32(data) {
-            view.setUint32(44 - 44 + offset, data, true);
+            view.setUint32(offset, data, true);
             offset += 4;
         }
+    }
+
+    // Helper: Decode audio data compatibly for Safari and older WebKit engines
+    function decodeAudioDataCompat(audioCtx, arrayBuffer) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Support older callback syntax alongside newer Promise syntax
+                const res = audioCtx.decodeAudioData(arrayBuffer, resolve, (err) => {
+                    reject(err || new Error("decodeAudioData failed"));
+                });
+                if (res && typeof res.then === 'function') {
+                    res.then(resolve).catch(reject);
+                }
+            } catch (e) {
+                reject(e);
+            }
+        });
     }
 
     // Helper: Decode uploaded media and downsample to 16kHz mono WAV Blob
@@ -487,8 +504,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContextClass();
         
-        // Decode original media file
-        const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        // Decode original media file using compatible promise wrapper
+        const decodedBuffer = await decodeAudioDataCompat(audioCtx, arrayBuffer);
         
         // Create OfflineAudioContext at 16000Hz mono (1 channel)
         const offlineCtx = new OfflineAudioContext(1, decodedBuffer.duration * 16000, 16000);
