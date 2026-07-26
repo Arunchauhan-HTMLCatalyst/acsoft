@@ -146,6 +146,34 @@ document.addEventListener('DOMContentLoaded', () => {
             alignment: 'center',
             animation: 'bounce',
             animSpeed: 1.2
+        },
+        mrbeast: {
+            fontFamily: 'Impact',
+            fontSize: 56,
+            uppercase: true,
+            textColor: '#ffffff',
+            highlightColor: '#00ff00',
+            strokeColor: '#000000',
+            strokeWidth: 8,
+            shadow: 'hard',
+            bottomMargin: 150,
+            alignment: 'center',
+            animation: 'pop',
+            animSpeed: 1.3
+        },
+        iman_gadzhi: {
+            fontFamily: 'Montserrat',
+            fontSize: 38,
+            uppercase: false,
+            textColor: '#ffffff',
+            highlightColor: '#f1f1f1',
+            strokeColor: '#000000',
+            strokeWidth: 1.5,
+            shadow: 'soft',
+            bottomMargin: 90,
+            alignment: 'center',
+            animation: 'fade',
+            animSpeed: 0.8
         }
     };
 
@@ -809,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle = '#ffffff';
         }
 
-        const isAnimatedPreset = ['hormozi', 'tiktok', 'gaming', 'neon'].includes(settings.activePreset);
+        const isAnimatedPreset = ['hormozi', 'tiktok', 'gaming', 'neon', 'mrbeast'].includes(settings.activePreset);
         
         if (words.length > 0 && isAnimatedPreset) {
             // Karaoke/Word-by-word Highlight Render
@@ -834,7 +862,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isActive) {
                     ctx.fillStyle = settings.highlightColor;
                     
-                    if (settings.animation === 'pop') {
+                    if (settings.activePreset === 'mrbeast') {
+                        ctx.translate(wordCenterX, y);
+                        ctx.rotate(-0.06); // slight rotation/tilt (approx -3.4 degrees)
+                        ctx.scale(1.25 * settings.animSpeed, 1.25 * settings.animSpeed);
+                        ctx.translate(-wordCenterX, -y);
+                    } else if (settings.animation === 'pop') {
                         ctx.translate(wordCenterX, y);
                         ctx.scale(1.2 * settings.animSpeed, 1.2 * settings.animSpeed);
                         ctx.translate(-wordCenterX, -y);
