@@ -30,16 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Modals & Triggers
     const btnSettings = document.getElementById('btnSettings');
-    const btnAdmin = document.getElementById('btnAdmin');
-    const btnLogin = document.getElementById('btnLogin');
-    
     const modalSettings = document.getElementById('modalSettings');
-    const modalLogin = document.getElementById('modalLogin');
-    const modalAdmin = document.getElementById('modalAdmin');
-    
     const btnCloseSettings = document.getElementById('btnCloseSettings');
-    const btnCloseLogin = document.getElementById('btnCloseLogin');
-    const btnCloseAdmin = document.getElementById('btnCloseAdmin');
     
     const groqApiKeyInput = document.getElementById('groqApiKeyInput');
     const btnSaveSettings = document.getElementById('btnSaveSettings');
@@ -1449,10 +1441,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         API_BASE = ONLINE_API_BASE;
     }
 
-    // Autologin indicator check
-    if (localStorage.getItem('google_auth_email')) {
-        btnLogin.textContent = localStorage.getItem('google_auth_email');
-    }
+
 
     // Settings Modal
     btnSettings.addEventListener('click', () => {
@@ -1466,19 +1455,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         alert("Groq API Key configuration saved successfully.");
     });
 
-    // Login Modal
-    btnLogin.addEventListener('click', () => modalLogin.classList.remove('hidden'));
-    btnCloseLogin.addEventListener('click', () => modalLogin.classList.add('hidden'));
-    document.getElementById('btnGoogleSignIn').addEventListener('click', () => {
-        localStorage.setItem('google_auth_email', 'arunchauhan@gmail.com');
-        btnLogin.textContent = 'arunchauhan@gmail.com';
-        modalLogin.classList.add('hidden');
-        alert("Signed in successfully with Google Mock.");
-    });
 
-    // Admin Modal
-    btnAdmin.addEventListener('click', () => modalAdmin.classList.remove('hidden'));
-    btnCloseAdmin.addEventListener('click', () => modalAdmin.classList.add('hidden'));
 
     // Tab view switcher controls
     const tabButtons = document.querySelectorAll('.tab-btn');

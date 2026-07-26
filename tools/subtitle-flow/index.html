@@ -33,8 +33,6 @@
             </a>
             <div class="header-right">
                 <button class="btn btn-outline-sm" id="btnSettings">⚙️ API Settings</button>
-                <button class="btn btn-outline-sm" id="btnAdmin">🛡️ Admin Panel</button>
-                <button class="btn btn-primary-sm" id="btnLogin">Google Login</button>
             </div>
         </div>
     </header>
@@ -423,96 +421,7 @@
         </div>
     </div>
 
-    <!-- Modal B: Authentication (Google / Email Mockup) -->
-    <div class="modal-wrapper hidden" id="modalLogin">
-        <div class="modal glass" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3>🔐 Access SubtitleFlow Studio</h3>
-                <button class="close-btn" id="btnCloseLogin">&times;</button>
-            </div>
-            <div class="modal-body text-center">
-                <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 20px;">Log in to sync your style templates, auto-saves, and increase your export resolutions.</p>
-                
-                <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btnGoogleSignIn">
-                    <span>🌐</span> Sign in with Google
-                </button>
-                
-                <div class="divider" style="margin: 20px 0; color: var(--color-text-muted); font-size: 0.72rem; position: relative;">
-                    <span style="background: rgb(20,20,20); padding: 0 10px;">OR EMAIL LOGIN</span>
-                </div>
 
-                <div class="settings-group" style="text-align: left; margin-bottom: 12px;">
-                    <label>Email Address</label>
-                    <input type="email" placeholder="you@example.com" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.3); color: #fff;">
-                </div>
-
-                <div class="settings-group" style="text-align: left;">
-                    <label>Password</label>
-                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.3); color: #fff;">
-                </div>
-
-                <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" id="btnEmailSignIn">Log In with Credentials</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal C: Admin Dashboard -->
-    <div class="modal-wrapper hidden" id="modalAdmin">
-        <div class="modal glass" style="max-width: 700px;">
-            <div class="modal-header">
-                <h3>🛡️ Admin Control & Revenue Analytics</h3>
-                <button class="close-btn" id="btnCloseAdmin">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="stats-row" style="margin-bottom: 20px;">
-                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
-                        <span class="stat-num" style="font-size: 1.4rem;">1,420</span>
-                        <span class="stat-label">Total Users</span>
-                    </div>
-                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
-                        <span class="stat-num" style="font-size: 1.4rem;">4,286</span>
-                        <span class="stat-label">Successful Renders</span>
-                    </div>
-                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
-                        <span class="stat-num" style="font-size: 1.4rem;">$386.50</span>
-                        <span class="stat-label">Monthly Revenue</span>
-                    </div>
-                </div>
-
-                <label>Recent System Renders Queue</label>
-                <table class="admin-table" style="width: 100%; font-size: 0.78rem; text-align: left; border-collapse: collapse; margin-top: 10px;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary);">
-                            <th style="padding: 8px;">User ID</th>
-                            <th style="padding: 8px;">Format</th>
-                            <th style="padding: 8px;">Resolution</th>
-                            <th style="padding: 8px;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 8px;">usr_9281</td>
-                            <td style="padding: 8px;">MP4 Video</td>
-                            <td style="padding: 8px;">1080p</td>
-                            <td style="padding: 8px; color: #00FF00;">Completed</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 8px;">usr_1042</td>
-                            <td style="padding: 8px;">SRT File</td>
-                            <td style="padding: 8px;">N/A</td>
-                            <td style="padding: 8px; color: #00FF00;">Completed</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 8px;">usr_4821</td>
-                            <td style="padding: 8px;">MP4 Video</td>
-                            <td style="padding: 8px;">1440p</td>
-                            <td style="padding: 8px; color: #ffff00;">In Queue</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
     <!-- JSZip Packaging Library (CDN Fallback) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
