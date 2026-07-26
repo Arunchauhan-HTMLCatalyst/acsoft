@@ -491,13 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show Loader and Auto-transcribe using Groq
             showProcessingLoader("Waking up cloud server...", 0);
             
-            // Fetch Groq API Key
+            // Fetch Groq API Key (optional local key, falls back to server default)
             const apiKey = groqApiKeyInput.value || localStorage.getItem('groq_api_key');
-            if (!apiKey) {
-                // If API Key is missing, generate high-quality simulated transcription placeholders
-                simulateTranscription(newProj);
-                return;
-            }
 
             // Create Form Payload
             const formData = new FormData();
@@ -509,11 +504,14 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 showProcessingLoader("AI Transcription starting (Groq Whisper)...", 20);
                 
+                const headers = {};
+                if (apiKey) {
+                    headers['X-Groq-API-Key'] = apiKey;
+                }
+
                 const response = await fetch(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
-                    headers: {
-                        'X-Groq-API-Key': apiKey
-                    },
+                    headers: headers,
                     body: formData
                 });
                 
