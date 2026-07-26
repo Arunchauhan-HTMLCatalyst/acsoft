@@ -28,13 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timelineEditorList = document.getElementById('timelineEditorList');
     const btnAutoBalance = document.getElementById('btnAutoBalance');
     
-    // Modals & Triggers
-    const btnSettings = document.getElementById('btnSettings');
-    const modalSettings = document.getElementById('modalSettings');
-    const btnCloseSettings = document.getElementById('btnCloseSettings');
-    
-    const groqApiKeyInput = document.getElementById('groqApiKeyInput');
-    const btnSaveSettings = document.getElementById('btnSaveSettings');
+
     
     // Export Dropdown
     const btnExportDropdown = document.getElementById('btnExportDropdown');
@@ -559,9 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show Loader and Auto-transcribe using Groq
             showProcessingLoader("Extracting and compressing audio client-side...", 10);
             
-            // Fetch Groq API Key (optional local key, falls back to server default)
-            const apiKey = groqApiKeyInput.value || localStorage.getItem('groq_api_key');
-
             try {
                 // Compress audio client-side to 16kHz mono WAV to speed up upload & prevent Render 30s timeouts
                 const compressedWavBlob = await extractAudioTrack(file);
@@ -576,15 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await discoverActiveServer();
 
                 showProcessingLoader("AI Transcription starting (Groq Whisper)...", 60);
-                
-                const headers = {};
-                if (apiKey) {
-                    headers['X-Groq-API-Key'] = apiKey;
-                }
 
                 const response = await fetch(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
-                    headers: headers,
                     body: formData
                 });
                 
@@ -1443,17 +1428,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 
-    // Settings Modal
-    btnSettings.addEventListener('click', () => {
-        groqApiKeyInput.value = localStorage.getItem('groq_api_key') || '';
-        modalSettings.classList.remove('hidden');
-    });
-    btnCloseSettings.addEventListener('click', () => modalSettings.classList.add('hidden'));
-    btnSaveSettings.addEventListener('click', () => {
-        localStorage.setItem('groq_api_key', groqApiKeyInput.value.trim());
-        modalSettings.classList.add('hidden');
-        alert("Groq API Key configuration saved successfully.");
-    });
+
 
 
 
