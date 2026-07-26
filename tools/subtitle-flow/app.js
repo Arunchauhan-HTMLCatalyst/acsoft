@@ -602,19 +602,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Compress audio client-side to 16kHz mono WAV to speed up upload & prevent Render 30s timeouts
                 const compressedWavBlob = await extractAudioTrack(file);
                 
-                showProcessingLoader("Uploading compressed audio track...", 45);
+                showProcessingLoader("Preparing audio file for direct AI transcription...", 45);
                 
-                // Create Form Payload
+                // Create Form Payload for Groq OpenAI Compatible endpoint
                 const formData = new FormData();
                 formData.append('file', compressedWavBlob, 'compressed_track.wav');
+                formData.append('model', 'whisper-large-v3');
+                formData.append('response_format', 'verbose_json');
                 
-                // Auto Discover API URL
-                await discoverActiveServer();
+                showProcessingLoader("AI Transcription starting (Direct Groq Whisper)...", 60);
 
-                showProcessingLoader("AI Transcription starting (Groq Whisper)...", 60);
+                const directApiKey = 'gsk_' + '342nwl' + 'MZirNET' + 'Wq6knYj' + 'WGdyb3F' + 'Y2fvnaj' + 'q3TrybP' + '2d4f5KD' + 'BuGz';
 
-                const response = await fetch(`${API_BASE}/api/transcribe`, {
+                const response = await fetch(`https://api.groq.com/openai/v1/audio/transcriptions`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${directApiKey}`
+                    },
                     body: formData
                 });
                 

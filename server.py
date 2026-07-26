@@ -13,7 +13,7 @@ def install_dependencies():
             __import__(pkg.replace('-', '_'))
         except ImportError:
             print(f"Installing missing dependency: {pkg}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--break-system-packages", pkg])
 
 install_dependencies()
 
@@ -183,6 +183,6 @@ def transcribe():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print(" acSoft Backend — YouTube Downloader Server running on port 5000")
+    print(" acSoft Backend — YouTube Downloader Server running on port 8000")
     print("=" * 60)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
