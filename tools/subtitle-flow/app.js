@@ -444,6 +444,82 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Helper: Convert AudioBuffer to 16-bit WAV Blob
+    function bufferToWav(buffer) {
+        let numOfChan = buffer.numberOfChannels,
+            length = buffer.length * 2 + 44,
+            bufferArr = new ArrayBuffer(length),
+            view = new DataView(bufferArr),
+            channels = [], i, sample,
+            offset = 0,
+            pos = 0;
+
+        // write WAV header
+        setUint32(0x46464946);                         // "RIFF"
+        setUint32(length - 8);                         // file length - 8
+        setUint32(0x45564157);                         // "WAVE"
+        setUint32(0x20746d66);                         // "fmt " chunk
+        setUint32(16);                                 // chunk length
+        setUint16(1);                                  // sample format (raw)
+        setUint16(numOfChan);                          // channel count
+        setUint32(buffer.sampleRate);                  // sample rate
+        setUint32(buffer.sampleRate * 2 * numOfChan); // byte rate (sample rate * block align)
+        setUint16(numOfChan * 2);                      // block align (channel count * bytes per sample)
+        setUint16(16);                                 // bits per sample
+        setUint32(0x61746164);                         // "data" - chunk
+        setUint32(buffer.length * 2 * numOfChan);      // chunk length
+
+        for(i=0; i<buffer.numberOfChannels; i++)
+            channels.push(buffer.getChannelData(i));
+
+        while(pos < buffer.length) {
+            for(i=0; i<numOfChan; i++) {             // interleave channels
+                sample = Math.max(-1, Math.min(1, channels[i][pos])); // clamp
+                sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF); // scale to 16-bit signed int
+                view.setInt16(44 + offset, sample, true); // write 16-bit sample
+                offset += 2;
+            }
+            pos++;
+        }
+
+        return new Blob([view], {type: 'audio/wav'});
+
+        function setUint16(data) {
+            view.setUint16(44 - 44 + offset, data, true);
+            offset += 2;
+        }
+
+        function setUint32(data) {
+            view.setUint32(44 - 44 + offset, data, true);
+            offset += 4;
+        }
+    }
+
+    // Helper: Decode uploaded media and downsample to 16kHz mono WAV Blob
+    async function extractAudioTrack(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContextClass();
+        
+        // Decode original media file
+        const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        // Create OfflineAudioContext at 16000Hz mono (1 channel)
+        const offlineCtx = new OfflineAudioContext(1, decodedBuffer.duration * 16000, 16000);
+        
+        // Play source inside offline context
+        const source = offlineCtx.createBufferSource();
+        source.buffer = decodedBuffer;
+        source.connect(offlineCtx.destination);
+        source.start();
+        
+        // Render
+        const renderedBuffer = await offlineCtx.startRendering();
+        
+        // Encode to WAV Blob
+        return bufferToWav(renderedBuffer);
+    }
+
     async function handleFileUpload(file) {
         const name = file.name;
         const ext = name.split('.').pop().toLowerCase();
@@ -489,20 +565,25 @@ document.addEventListener('DOMContentLoaded', () => {
             newProj.audioFile = file;
             
             // Show Loader and Auto-transcribe using Groq
-            showProcessingLoader("Waking up cloud server...", 0);
+            showProcessingLoader("Extracting and compressing audio client-side...", 10);
             
             // Fetch Groq API Key (optional local key, falls back to server default)
             const apiKey = groqApiKeyInput.value || localStorage.getItem('groq_api_key');
 
-            // Create Form Payload
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            // Auto Discover API URL
-            await discoverActiveServer();
-
             try {
-                showProcessingLoader("AI Transcription starting (Groq Whisper)...", 20);
+                // Compress audio client-side to 16kHz mono WAV to speed up upload & prevent Render 30s timeouts
+                const compressedWavBlob = await extractAudioTrack(file);
+                
+                showProcessingLoader("Uploading compressed audio track...", 45);
+                
+                // Create Form Payload
+                const formData = new FormData();
+                formData.append('file', compressedWavBlob, 'compressed_track.wav');
+                
+                // Auto Discover API URL
+                await discoverActiveServer();
+
+                showProcessingLoader("AI Transcription starting (Groq Whisper)...", 60);
                 
                 const headers = {};
                 if (apiKey) {
@@ -531,12 +612,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadProject(newProj);
                     };
                 } else {
-                    const err = await response.json();
-                    alert("Transcription error: " + (err.error || "Failed API request."));
+                    let errorMessage = "Failed API request.";
+                    try {
+                        const err = await response.json();
+                        errorMessage = err.detail || err.error || JSON.stringify(err);
+                    } catch (e) {
+                        try {
+                            errorMessage = await response.text();
+                        } catch (e2) {}
+                    }
+                    alert("Transcription error: " + errorMessage);
                     simulateTranscription(newProj);
                 }
             } catch (err) {
                 console.error("Transcribe failed, falling back to simulation:", err);
+                alert("Transcription failed. Falling back to offline simulation.");
                 simulateTranscription(newProj);
             }
         }
