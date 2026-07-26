@@ -596,8 +596,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render
         const renderedBuffer = await offlineCtx.startRendering();
         
-        // Encode to WAV Blob
-        return bufferToWav(renderedBuffer);
+        // Encode to WAV Blob and return alongside precise original duration
+        return {
+            blob: bufferToWav(renderedBuffer),
+            duration: decodedBuffer.duration
+        };
     }
 
     async function handleFileUpload(file) {
@@ -649,13 +652,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 // Compress audio client-side to 16kHz mono WAV to speed up upload & prevent Render 30s timeouts
-                const compressedWavBlob = await extractAudioTrack(file);
+                const { blob, duration } = await extractAudioTrack(file);
+                
+                // Store the precise decoded duration of the audio/video file
+                newProj.duration = duration;
                 
                 showProcessingLoader("Preparing audio file for direct AI transcription...", 45);
                 
                 // Create Form Payload for Groq OpenAI Compatible endpoint
                 const formData = new FormData();
-                formData.append('file', compressedWavBlob, 'compressed_track.wav');
+                formData.append('file', blob, 'compressed_track.wav');
                 formData.append('model', 'whisper-large-v3');
                 formData.append('response_format', 'verbose_json');
                 
@@ -663,8 +669,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('timestamp_granularities[]', 'word');
                 formData.append('timestamp_granularities[]', 'segment');
                 
-                // Instruct AI context prediction for exact word detection (capitalization, technical names, Hinglish/Hindi accents, proper spelling)
-                formData.append('prompt', 'Transcribe the audio exactly. Predict and correct spelling of spoken words, technical terms, names, and mixed English/Hindi (Hinglish) phrases. Use proper punctuation, sentence case, and capitalization.');
+                // Instruct AI context prediction for exact word detection, transcribing Hindi/Hinglish in Latin/English script matching the spoken pronunciation
+                formData.append('prompt', 'Transcribe the audio exactly in the spoken language. Do not translate. If the speaker speaks in Hindi or mixed Hindi-English (Hinglish), transcribe the Hindi words in Latin/English script (e.g. "kaise ho", "mera naam", "ye video", "subscribe karo") matching the exact spoken Hinglish pronunciation. Preserve technical terms, punctuation, and capitalization.');
                 
                 showProcessingLoader("AI Transcription starting (Direct Groq Whisper)...", 60);
 
@@ -684,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Parse Verbose JSON chunks
                     newProj.subtitles = parseGroqVerbose(verboseData);
-                    newProj.duration = verboseData.duration || 30;
+                    newProj.duration = newProj.duration || verboseData.duration || 30;
                     
                     // Save and load
                     const tx = db.transaction('projects', 'readwrite');
