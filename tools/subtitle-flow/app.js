@@ -174,6 +174,48 @@ document.addEventListener('DOMContentLoaded', () => {
             alignment: 'center',
             animation: 'fade',
             animSpeed: 0.8
+        },
+        kalakaar_capsule: {
+            fontFamily: 'Poppins',
+            fontSize: 44,
+            uppercase: true,
+            textColor: '#ffffff',
+            highlightColor: '#6366f1',
+            strokeColor: '#000000',
+            strokeWidth: 0,
+            shadow: 'none',
+            bottomMargin: 130,
+            alignment: 'center',
+            animation: 'pop',
+            animSpeed: 1.15
+        },
+        instagram_focus: {
+            fontFamily: 'Montserrat',
+            fontSize: 48,
+            uppercase: true,
+            textColor: '#ffffff',
+            highlightColor: '#ffeb3b',
+            strokeColor: '#000000',
+            strokeWidth: 4,
+            shadow: 'soft',
+            bottomMargin: 140,
+            alignment: 'center',
+            animation: 'pop',
+            animSpeed: 1.15
+        },
+        minimalist_bar: {
+            fontFamily: 'Inter',
+            fontSize: 36,
+            uppercase: false,
+            textColor: '#ffffff',
+            highlightColor: '#ffffff',
+            strokeColor: '#000000',
+            strokeWidth: 0,
+            shadow: 'none',
+            bottomMargin: 80,
+            alignment: 'center',
+            animation: 'fade',
+            animSpeed: 1.0
         }
     };
 
@@ -868,7 +910,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(0, 0, w, h);
         }
         
-        const time = audioPlayer.currentTime;
+        // Apply 80ms sync calibration offset so highlights match the spoken beat exactly
+        const time = audioPlayer.currentTime + 0.08;
         
         // 2. Find active subtitle
         const activeSub = subtitles.find(s => time >= s.start && time <= s.end);
@@ -922,12 +965,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle = '#ffffff';
         }
 
-        const isAnimatedPreset = ['hormozi', 'tiktok', 'gaming', 'neon', 'mrbeast'].includes(settings.activePreset);
+        const isAnimatedPreset = ['hormozi', 'tiktok', 'gaming', 'neon', 'mrbeast', 'kalakaar_capsule', 'instagram_focus'].includes(settings.activePreset);
         
         if (words.length > 0 && isAnimatedPreset) {
             // Karaoke/Word-by-word Highlight Render
             let totalWidth = 0;
-            const wordSpacing = ctx.measureText(" ").width;
+            // Dynamic word spacing to prevent overlapping during zoom/pop animations
+            const wordSpacingMultiplier = isAnimatedPreset ? 1.6 : 1.1;
+            const wordSpacing = ctx.measureText(" ").width * wordSpacingMultiplier;
             
             const widths = words.map(w => ctx.measureText(settings.uppercase ? w.word.toUpperCase() : w.word).width);
             totalWidth = widths.reduce((a, b) => a + b, 0) + (words.length - 1) * wordSpacing;
@@ -944,24 +989,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.save();
                 
                 const isActive = (time >= w.start && time <= w.end);
-                if (isActive) {
+                
+                if (settings.activePreset === 'instagram_focus') {
+                    // Instagram Focus: Non-active words are faded out
+                    if (isActive) {
+                        ctx.globalAlpha = 1.0;
+                        ctx.fillStyle = settings.highlightColor;
+                        
+                        // Active word scales up slightly
+                        ctx.translate(wordCenterX, y);
+                        ctx.scale(1.15 * settings.animSpeed, 1.15 * settings.animSpeed);
+                        ctx.translate(-wordCenterX, -y);
+                    } else {
+                        ctx.globalAlpha = 0.35;
+                        ctx.fillStyle = settings.textColor;
+                    }
+                } else if (isActive) {
                     ctx.fillStyle = settings.highlightColor;
                     
-                    if (settings.activePreset === 'mrbeast') {
+                    if (settings.activePreset === 'kalakaar_capsule') {
+                        // Kalakaar Capsule: draw capsule background behind active word
+                        const capPaddingH = 16;
+                        const capPaddingV = 10;
+                        const capW = wordWidth + capPaddingH;
+                        const capH = parseInt(settings.fontSize) + capPaddingV;
+                        const capX = wordCenterX - capW / 2;
+                        const capY = y - capH / 2;
+                        const capRadius = 12;
+                        
+                        ctx.save();
+                        // Reset shadow for the capsule fill
+                        ctx.shadowColor = 'transparent';
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                        
+                        ctx.fillStyle = settings.highlightColor; // Capsule color (e.g. Indigo)
+                        ctx.beginPath();
+                        ctx.roundRect(capX, capY, capW, capH, capRadius);
+                        ctx.fill();
+                        ctx.restore();
+                        
+                        // Active text inside capsule is pure white and slightly scaled
+                        ctx.fillStyle = '#ffffff';
+                        ctx.translate(wordCenterX, y);
+                        ctx.scale(1.1 * settings.animSpeed, 1.1 * settings.animSpeed);
+                        ctx.translate(-wordCenterX, -y);
+                    } else if (settings.activePreset === 'mrbeast') {
                         ctx.translate(wordCenterX, y);
                         ctx.rotate(-0.06); // slight rotation/tilt (approx -3.4 degrees)
-                        ctx.scale(1.25 * settings.animSpeed, 1.25 * settings.animSpeed);
+                        ctx.scale(1.2 * settings.animSpeed, 1.2 * settings.animSpeed);
                         ctx.translate(-wordCenterX, -y);
                     } else if (settings.animation === 'pop') {
                         ctx.translate(wordCenterX, y);
-                        ctx.scale(1.2 * settings.animSpeed, 1.2 * settings.animSpeed);
+                        ctx.scale(1.15 * settings.animSpeed, 1.15 * settings.animSpeed);
                         ctx.translate(-wordCenterX, -y);
                     } else if (settings.animation === 'bounce') {
                         ctx.translate(0, -10 * settings.animSpeed);
                     }
+                } else {
+                    ctx.fillStyle = settings.textColor;
                 }
                 
-                if (settings.strokeWidth > 0) {
+                // Draw outline if strokeWidth > 0
+                if (settings.strokeWidth > 0 && settings.activePreset !== 'kalakaar_capsule') {
                     ctx.strokeText(wordText, wordCenterX, y);
                 }
                 ctx.fillText(wordText, wordCenterX, y);
@@ -973,14 +1064,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Standard Full-Phrase Render (Ali Abdaal / Netflix)
             const centerX = canvasW / 2;
             
-            if (settings.activePreset === 'ali_abdaal') {
+            if (settings.activePreset === 'ali_abdaal' || settings.activePreset === 'minimalist_bar') {
                 const textWidth = ctx.measureText(text).width;
-                const rectWidth = textWidth + 30;
+                const rectWidth = textWidth + 36;
                 const rectHeight = parseInt(settings.fontSize) + 20;
                 
-                ctx.fillStyle = 'rgba(0,0,0,0.65)';
+                // Minimalist Bar uses a very soft elegant pill background
+                ctx.fillStyle = settings.activePreset === 'minimalist_bar' ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.65)';
                 ctx.beginPath();
-                ctx.roundRect(centerX - rectWidth/2, y - rectHeight/2, rectWidth, rectHeight, 10);
+                ctx.roundRect(centerX - rectWidth/2, y - rectHeight/2, rectWidth, rectHeight, 14);
                 ctx.fill();
             }
             
