@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const decodedBuffer = await decodeAudioDataCompat(audioCtx, arrayBuffer);
         
         // Create OfflineAudioContext at 16000Hz mono (1 channel)
-        const offlineCtx = new OfflineAudioContext(1, decodedBuffer.duration * 16000, 16000);
+        const offlineCtx = new OfflineAudioContext(1, Math.round(decodedBuffer.duration * 16000), 16000);
         
         // Play source inside offline context
         const source = offlineCtx.createBufferSource();
@@ -641,7 +641,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     let errorMessage = "Failed API request.";
                     try {
                         const err = await response.json();
-                        errorMessage = err.detail || err.error || JSON.stringify(err);
+                        errorMessage = (err.error && err.error.message) || err.detail || err.error || JSON.stringify(err);
+                        if (typeof errorMessage === 'object') {
+                            errorMessage = JSON.stringify(errorMessage);
+                        }
                     } catch (e) {
                         try {
                             errorMessage = await response.text();
@@ -726,34 +729,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseGroqVerbose(data) {
-        // Groq Verbose JSON returns a list of "segments"
+        // Gather all words from segments or top-level words list
+        let allWords = [];
         const segments = data.segments || [];
-        return segments.map(seg => {
-            const start = seg.start;
-            const end = seg.end;
-            const text = seg.text.trim();
-            
-            // Collect word level timestamps if available
-            // If API doesn't provide word array directly, we generate them from segment timings
-            const wordsList = seg.words || [];
-            let words = wordsList.map(w => ({
-                word: w.word.trim(),
-                start: w.start,
-                end: w.end
-            }));
-            
-            if (words.length === 0) {
-                const splitWords = text.split(' ');
-                const dur = (end - start) / Math.max(splitWords.length, 1);
-                words = splitWords.map((w, idx) => ({
-                    word: w,
-                    start: start + idx * dur,
-                    end: start + (idx + 1) * dur
-                }));
+        
+        segments.forEach(seg => {
+            const segWords = seg.words || [];
+            if (segWords.length > 0) {
+                segWords.forEach(w => {
+                    allWords.push({
+                        word: w.word.trim(),
+                        start: w.start,
+                        end: w.end
+                    });
+                });
+            } else {
+                // Fallback: Split segment text by whitespace and spread timing
+                const text = seg.text.trim();
+                const splitWords = text.split(/\s+/).filter(Boolean);
+                const dur = (seg.end - seg.start) / Math.max(splitWords.length, 1);
+                splitWords.forEach((word, idx) => {
+                    allWords.push({
+                        word: word,
+                        start: seg.start + idx * dur,
+                        end: seg.start + (idx + 1) * dur
+                    });
+                });
             }
-            
-            return { start, end, text, words };
         });
+
+        if (allWords.length === 0 && data.text) {
+            // Ultimate fallback if no segments/words: split main text
+            const splitWords = data.text.trim().split(/\s+/).filter(Boolean);
+            const dur = (data.duration || 30) / Math.max(splitWords.length, 1);
+            splitWords.forEach((word, idx) => {
+                allWords.push({
+                    word: word,
+                    start: idx * dur,
+                    end: (idx + 1) * dur
+                });
+            });
+        }
+
+        // Determine Max characters per line based on aspect ratio
+        // 16:9 -> 30 letters max, 9:16 -> 24 letters max
+        const maxChars = (activeAspect === '16:9') ? 30 : 24;
+        
+        const subtitleSegments = [];
+        let currentGroup = [];
+        let currentLength = 0;
+
+        allWords.forEach((wordObj) => {
+            const cleanWord = wordObj.word;
+            const wordLengthWithSpace = cleanWord.length + (currentGroup.length > 0 ? 1 : 0);
+
+            // Group close words together. Trigger split if:
+            // 1. Adding this word exceeds the character limit
+            // 2. Or there is a significant pause between words (> 1.2 seconds)
+            const lastWord = currentGroup[currentGroup.length - 1];
+            const hasPause = lastWord && (wordObj.start - lastWord.end > 1.2);
+
+            if (currentGroup.length > 0 && (currentLength + wordLengthWithSpace > maxChars || hasPause)) {
+                const groupText = currentGroup.map(w => w.word).join(' ');
+                subtitleSegments.push({
+                    start: currentGroup[0].start,
+                    end: lastWord.end,
+                    text: groupText,
+                    words: [...currentGroup]
+                });
+                currentGroup = [];
+                currentLength = 0;
+            }
+
+            currentGroup.push({
+                word: cleanWord,
+                start: wordObj.start,
+                end: wordObj.end
+            });
+            currentLength += cleanWord.length + (currentGroup.length > 1 ? 1 : 0);
+        });
+
+        // Add last remaining group
+        if (currentGroup.length > 0) {
+            const groupText = currentGroup.map(w => w.word).join(' ');
+            subtitleSegments.push({
+                start: currentGroup[0].start,
+                end: currentGroup[currentGroup.length - 1].end,
+                text: groupText,
+                words: [...currentGroup]
+            });
+        }
+
+        return subtitleSegments;
     }
 
     // ==========================================================================
