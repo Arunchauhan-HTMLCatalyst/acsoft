@@ -123,6 +123,65 @@ def download():
     fallback_url = f"https://savefrom.net/?url={urllib.parse.quote(url)}"
     return redirect(fallback_url)
 
+@app.route('/api/transcribe', methods=['POST'])
+def transcribe():
+    # Check for Groq API key
+    api_key = request.headers.get("X-Groq-API-Key") or os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return jsonify({'error': 'Groq API Key is missing. Please set it in the editor settings.'}), 400
+
+    # Ensure a file was uploaded
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+        
+    uploaded_file = request.files['file']
+    if uploaded_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Read file contents and prepare parameters
+    file_contents = uploaded_file.read()
+    filename = uploaded_file.filename
+    content_type = uploaded_file.content_type or 'audio/mpeg'
+    language = request.args.get('language')
+
+    # Query Groq Audio Transcription API
+    groq_url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    files = {
+        "file": (filename, file_contents, content_type)
+    }
+    data = {
+        "model": "whisper-large-v3",
+        "response_format": "verbose_json"
+    }
+    if language:
+        data["language"] = language
+
+    try:
+        with httpx.Client(verify=False) as client:
+            response = client.post(
+                groq_url,
+                headers=headers,
+                files=files,
+                data=data,
+                timeout=45.0  # Allow longer time for speech-to-text
+            )
+            
+            if response.status_code == 200:
+                return jsonify(response.json())
+            else:
+                try:
+                    err_data = response.json()
+                    detail = err_data.get("error", {}).get("message", response.text)
+                except Exception:
+                    detail = response.text
+                return jsonify({'error': detail}), response.status_code
+                
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     print("=" * 60)
     print(" acSoft Backend — YouTube Downloader Server running on port 5000")

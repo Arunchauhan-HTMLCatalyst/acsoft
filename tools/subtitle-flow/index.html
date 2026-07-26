@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubtitleFlow AI | Premium Animated Subtitle Studio</title>
+    <meta name="description" content="Generate beautiful animated captions and subtitles on a chroma key green background for TikTok, Instagram Reels, and YouTube Shorts. Custom Hormozi, Netflix, and TikTok styles.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../../logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&family=Impact&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css?v=1.14">
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="glow-bg">
+        <div class="glow-point pt-left"></div>
+        <div class="glow-point pt-right"></div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header">
+        <div class="container nav-container">
+            <a href="../" class="logo">
+                ac<span>Soft</span><span class="dot">.</span>
+            </a>
+            <div class="header-right">
+                <button class="btn btn-outline-sm" id="btnSettings">⚙️ API Settings</button>
+                <button class="btn btn-outline-sm" id="btnAdmin">🛡️ Admin Panel</button>
+                <button class="btn btn-primary-sm" id="btnLogin">Google Login</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <main class="main-container container">
+
+        <!-- 1. Landing View -->
+        <section id="landingView" class="view-section">
+            <div class="section-intro text-center">
+                <span class="badge">SubtitleFlow AI</span>
+                <h1>The Caption Studio for Video Editors</h1>
+                <p class="subtitle">Create professional animated subtitles in seconds. Export on a Green Screen for Adobe Premiere, CapCut, and DaVinci Resolve.</p>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-card glass" id="dropzone">
+                <input type="file" id="fileInput" accept=".mp3,.wav,.mp4,.mov,.srt" style="display: none;">
+                <div class="upload-icon">📁</div>
+                <h3>Drag & Drop media here</h3>
+                <p>or click to browse your files</p>
+                <div class="supported-formats">Supported Formats: MP3, WAV, MP4, MOV, SRT (Max 50MB)</div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Usage Stats -->
+                <div class="dashboard-card glass">
+                    <h3>Usage Statistics</h3>
+                    <div class="stats-row">
+                        <div class="stat-item">
+                            <span class="stat-num" id="statDownloads">0</span>
+                            <span class="stat-label">Downloads</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-num" id="statStorage">0 MB</span>
+                            <span class="stat-label">Storage Used</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Projects -->
+                <div class="dashboard-card glass">
+                    <h3>Recent Projects</h3>
+                    <div class="projects-list" id="recentProjectsList">
+                        <p class="empty-text">No recent projects found. Upload a file to start!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Tier Preview -->
+            <div class="pricing-preview text-center">
+                <h3>Choose SubtitleFlow Premium for 1080p & All Styles</h3>
+                <div class="pricing-cards">
+                    <div class="price-card glass">
+                        <h4>Free Tier</h4>
+                        <div class="price">$0</div>
+                        <ul>
+                            <li>5 Projects / Month</li>
+                            <li>720p Max Export</li>
+                            <li>Basic Styles only</li>
+                        </ul>
+                    </div>
+                    <div class="price-card glass premium-highlight">
+                        <h4>Premium Pro</h4>
+                        <div class="price">$9<span>/mo</span></div>
+                        <ul>
+                            <li>Unlimited Projects</li>
+                            <li>1080p / 1440p HD Export</li>
+                            <li>Hormozi, Neon, Netflix & custom styles</li>
+                            <li>Priority Processing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Workspace View (Hidden by default) -->
+        <section id="workspaceView" class="view-section hidden">
+            
+            <div class="workspace-grid">
+                
+                <!-- Left Panel: Style Customizer -->
+                <div class="panel glass" id="stylePanel">
+                    <div class="panel-header">
+                        <h2>🎨 Style Subtitles</h2>
+                    </div>
+                    
+                    <div class="panel-tabs">
+                        <button class="tab-btn active" data-tab="tabStyles">Templates</button>
+                        <button class="tab-btn" data-tab="tabCustomize">Customize</button>
+                        <button class="tab-btn" data-tab="tabCanvas">Canvas</button>
+                    </div>
+
+                    <!-- Tab Content: Templates -->
+                    <div class="tab-content" id="tabStyles">
+                        <label>Choose Subtitle Style</label>
+                        <div class="style-selector-grid">
+                            <button class="style-btn active" data-preset="hormozi">
+                                <span class="style-icon">🔥</span>
+                                <span class="style-name">Hormozi</span>
+                            </button>
+                            <button class="style-btn" data-preset="ali_abdaal">
+                                <span class="style-icon">💼</span>
+                                <span class="style-name">Ali Abdaal</span>
+                            </button>
+                            <button class="style-btn" data-preset="tiktok">
+                                <span class="style-icon">⚡</span>
+                                <span class="style-name">TikTok</span>
+                            </button>
+                            <button class="style-btn" data-preset="netflix">
+                                <span class="style-icon">📺</span>
+                                <span class="style-name">Netflix</span>
+                            </button>
+                            <button class="style-btn" data-preset="neon">
+                                <span class="style-icon">🔮</span>
+                                <span class="style-name">Neon Glow</span>
+                            </button>
+                            <button class="style-btn" data-preset="gaming">
+                                <span class="style-icon">🎮</span>
+                                <span class="style-name">Gaming</span>
+                            </button>
+                        </div>
+
+                        <!-- Presets Manager -->
+                        <div class="custom-presets-section" style="margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 15px;">
+                            <label>Saved Presets</label>
+                            <div class="presets-row" id="presetsList">
+                                <span class="empty-text">No custom presets saved.</span>
+                            </div>
+                            <div class="preset-save-control" style="display: flex; gap: 8px; margin-top: 10px;">
+                                <input type="text" id="presetNameInput" placeholder="Preset Name..." style="flex: 1; padding: 8px 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.2); color: #fff;">
+                                <button class="btn btn-outline-sm" id="btnSavePreset">Save Current</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Customize -->
+                    <div class="tab-content hidden" id="tabCustomize">
+                        <div class="settings-group">
+                            <label>Font Family</label>
+                            <select id="fontFamilySelect">
+                                <option value="Outfit">Outfit (Google Sans)</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Arial">Arial</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Font Size (<span id="lblFontSize">48px</span>)</label>
+                            <input type="range" id="fontSizeSlider" min="20" max="120" value="48">
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="uppercaseToggle">
+                                <label for="uppercaseToggle">FORCE UPPERCASE</label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Colors</label>
+                            <div class="color-row">
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="textColorPicker" value="#ffffff">
+                                    <span>Text</span>
+                                </div>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="highlightColorPicker" value="#ffff00">
+                                    <span>Highlight</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Outline Stroke</label>
+                            <div class="color-row">
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="strokeColorPicker" value="#000000">
+                                    <span>Color</span>
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.72rem; margin-bottom: 2px;">Width (<span id="lblStrokeWidth">4px</span>)</label>
+                                    <input type="range" id="strokeWidthSlider" min="0" max="15" value="4">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Soft Drop Shadow</label>
+                            <select id="shadowSelect">
+                                <option value="none">None</option>
+                                <option value="soft">Soft Shadow</option>
+                                <option value="hard">Hard Shadow</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Positioning</label>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.72rem;">Bottom Margin (<span id="lblBottomMargin">100px</span>)</label>
+                                    <input type="range" id="bottomMarginSlider" min="20" max="500" value="100">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.72rem;">Alignment</label>
+                                    <select id="alignmentSelect">
+                                        <option value="center">Center</option>
+                                        <option value="left">Left</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Word Animations</label>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.72rem;">Animation</label>
+                                    <select id="animationSelect">
+                                        <option value="pop">Pop Scale</option>
+                                        <option value="bounce">Bounce Up</option>
+                                        <option value="fade">Smooth Fade</option>
+                                        <option value="none">Static</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.72rem;">Anim Speed (<span id="lblAnimSpeed">1.0x</span>)</label>
+                                    <input type="range" id="animSpeedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Canvas Settings -->
+                    <div class="tab-content hidden" id="tabCanvas">
+                        <div class="settings-group">
+                            <label>Aspect Ratio</label>
+                            <div class="aspect-ratio-selector">
+                                <button class="aspect-btn active" data-ratio="9:16">📱 9:16 (Shorts)</button>
+                                <button class="aspect-btn" data-ratio="16:9">💻 16:9 (Widescreen)</button>
+                                <button class="aspect-btn" data-ratio="1:1">⏹️ 1:1 (Square)</button>
+                                <button class="aspect-btn" data-ratio="4:5">📸 4:5 (Social)</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Export Resolution</label>
+                            <select id="resolutionSelect">
+                                <option value="720">720p (Standard HD)</option>
+                                <option value="1080" selected>1080p (Full HD)</option>
+                                <option value="1440">1440p (QHD)</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Background Canvas</label>
+                            <select id="bgSelect">
+                                <option value="#00FF00" selected>Chroma Key Green (#00FF00)</option>
+                                <option value="transparent">Transparent Background</option>
+                                <option value="#000000">Pure Black (#000000)</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Safe Area Guides Overlays</label>
+                            <div class="guides-selector">
+                                <button class="guide-btn" data-guide="shorts">YouTube Shorts</button>
+                                <button class="guide-btn" data-guide="reels">IG Reels</button>
+                                <button class="guide-btn" data-guide="tiktok">TikTok</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Panel: Interactive Preview Player & Canvas -->
+                <div class="panel glass" id="playerPanel">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <button class="btn btn-outline-sm" id="btnBackToUpload">&larr; Back</button>
+                        <h2 id="workspaceTitle" style="font-size: 1.1rem; margin: 0;">Untitled Project</h2>
+                        <div class="export-dropdown-wrapper">
+                            <button class="btn btn-primary" id="btnExportDropdown">Export Files 📥</button>
+                            <div class="export-dropdown hidden" id="exportDropdown">
+                                <button data-export-type="mp4">Export Green Screen MP4</button>
+                                <button data-export-type="srt">Export SRT File</button>
+                                <button data-export-type="ass">Export ASS File</button>
+                                <button data-export-type="zip">Export ZIP Package</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Viewport Canvas Container -->
+                    <div class="viewport-container">
+                        <div class="canvas-wrapper" id="canvasWrapper">
+                            <canvas id="previewCanvas"></canvas>
+                            <!-- Guides overlays overlaying the canvas -->
+                            <div class="guide-overlay hidden" id="shortsGuideOverlay">
+                                <div class="shorts-ui-sim"></div>
+                            </div>
+                            <div class="guide-overlay hidden" id="reelsGuideOverlay">
+                                <div class="reels-ui-sim"></div>
+                            </div>
+                            <div class="guide-overlay hidden" id="tiktokGuideOverlay">
+                                <div class="tiktok-ui-sim"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player Timeline Controls -->
+                    <div class="player-controls">
+                        <div class="timeline-row">
+                            <input type="range" id="timelineSlider" min="0" max="100" value="0" style="width: 100%;">
+                        </div>
+                        <div class="buttons-row">
+                            <div class="playback-buttons">
+                                <button class="play-control-btn" id="btnPrevFrame">⏮️</button>
+                                <button class="play-control-btn" id="btnPlayPause">▶</button>
+                                <button class="play-control-btn" id="btnNextFrame">⏭️</button>
+                            </div>
+                            <div class="time-codes">
+                                <span id="timeCurrent">00:00.0</span> / <span id="timeTotal">00:00.0</span>
+                            </div>
+                            <div class="audio-toggles">
+                                <div class="checkbox-row" style="margin-right: 15px;">
+                                    <input type="checkbox" id="includeAudioToggle" checked>
+                                    <label for="includeAudioToggle" style="font-size: 0.72rem;">Original Audio</label>
+                                </div>
+                                <button class="play-control-btn" id="btnMute" style="font-size: 1.1rem;">🔊</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Captions & Timeline Editor -->
+                <div class="panel glass" id="timelinePanel">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>📝 Timeline Editor</h2>
+                        <button class="btn btn-outline-sm" id="btnAutoBalance" title="Balance subtitle text into natural shorter lines">Auto Balance</button>
+                    </div>
+                    
+                    <div class="timeline-editor-wrapper" id="timelineEditorList">
+                        <p class="empty-text">No subtitle cards generated yet.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 3. Processing overlay -->
+        <section id="processingOverlay" class="loader-overlay hidden">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <div class="spinner-progress" id="spinnerProgress">0%</div>
+            </div>
+            <h3 id="processingTitle">Speech Transcription</h3>
+            <p id="processingStatus">Waking up cloud server...</p>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-fill" id="processingProgressFill"></div>
+            </div>
+            <div class="time-remaining-wrapper">
+                Elapsed: <span id="processingTimeElapsed">0s</span> | Remaining: <span id="processingTimeRemaining">Estimating...</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Modal A: Settings (Groq API Key Config) -->
+    <div class="modal-wrapper hidden" id="modalSettings">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>⚙️ API Settings Configuration</h3>
+                <button class="close-btn" id="btnCloseSettings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label>Groq API Authentication Key</label>
+                    <p style="font-size: 0.72rem; color: var(--color-text-muted); margin-bottom: 8px;">To enable high-accuracy transcription (Whisper-large-v3) directly from the web browser, paste your private Groq API key below. The key is stored locally in your browser and is never sent to third parties.</p>
+                    <input type="password" id="groqApiKeyInput" placeholder="gsk_..." style="width: 100%; padding: 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.3); color: #fff;">
+                </div>
+                <button class="btn btn-primary" id="btnSaveSettings" style="width: 100%; margin-top: 15px;">Save Key Configuration</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal B: Authentication (Google / Email Mockup) -->
+    <div class="modal-wrapper hidden" id="modalLogin">
+        <div class="modal glass" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>🔐 Access SubtitleFlow Studio</h3>
+                <button class="close-btn" id="btnCloseLogin">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 20px;">Log in to sync your style templates, auto-saves, and increase your export resolutions.</p>
+                
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btnGoogleSignIn">
+                    <span>🌐</span> Sign in with Google
+                </button>
+                
+                <div class="divider" style="margin: 20px 0; color: var(--color-text-muted); font-size: 0.72rem; position: relative;">
+                    <span style="background: rgb(20,20,20); padding: 0 10px;">OR EMAIL LOGIN</span>
+                </div>
+
+                <div class="settings-group" style="text-align: left; margin-bottom: 12px;">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="you@example.com" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.3); color: #fff;">
+                </div>
+
+                <div class="settings-group" style="text-align: left;">
+                    <label>Password</label>
+                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: rgba(0,0,0,0.3); color: #fff;">
+                </div>
+
+                <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" id="btnEmailSignIn">Log In with Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal C: Admin Dashboard -->
+    <div class="modal-wrapper hidden" id="modalAdmin">
+        <div class="modal glass" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>🛡️ Admin Control & Revenue Analytics</h3>
+                <button class="close-btn" id="btnCloseAdmin">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-row" style="margin-bottom: 20px;">
+                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
+                        <span class="stat-num" style="font-size: 1.4rem;">1,420</span>
+                        <span class="stat-label">Total Users</span>
+                    </div>
+                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
+                        <span class="stat-num" style="font-size: 1.4rem;">4,286</span>
+                        <span class="stat-label">Successful Renders</span>
+                    </div>
+                    <div class="stat-item glass" style="padding: 15px; border-radius: 8px;">
+                        <span class="stat-num" style="font-size: 1.4rem;">$386.50</span>
+                        <span class="stat-label">Monthly Revenue</span>
+                    </div>
+                </div>
+
+                <label>Recent System Renders Queue</label>
+                <table class="admin-table" style="width: 100%; font-size: 0.78rem; text-align: left; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary);">
+                            <th style="padding: 8px;">User ID</th>
+                            <th style="padding: 8px;">Format</th>
+                            <th style="padding: 8px;">Resolution</th>
+                            <th style="padding: 8px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 8px;">usr_9281</td>
+                            <td style="padding: 8px;">MP4 Video</td>
+                            <td style="padding: 8px;">1080p</td>
+                            <td style="padding: 8px; color: #00FF00;">Completed</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 8px;">usr_1042</td>
+                            <td style="padding: 8px;">SRT File</td>
+                            <td style="padding: 8px;">N/A</td>
+                            <td style="padding: 8px; color: #00FF00;">Completed</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 8px;">usr_4821</td>
+                            <td style="padding: 8px;">MP4 Video</td>
+                            <td style="padding: 8px;">1440p</td>
+                            <td style="padding: 8px; color: #ffff00;">In Queue</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSZip Packaging Library (CDN Fallback) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- App Logic Script -->
+    <script src="app.js?v=1.14"></script>
+</body>
+</html>

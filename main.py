@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, UploadFile, File, Header
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import re
 import urllib.parse
 import asyncio
+import os
 
 app = FastAPI(
     title="acSoft YouTube Downloader API",
@@ -107,6 +108,67 @@ async def download(url: str = Query(..., description="YouTube video URL"), forma
     # Fallback to SaveFrom if all Cobalt instances fail
     fallback_url = f"https://savefrom.net/?url={urllib.parse.quote(url)}"
     return RedirectResponse(url=fallback_url)
+
+@app.post("/api/transcribe")
+async def transcribe(
+    file: UploadFile = File(...),
+    x_groq_api_key: str = Header(None, alias="X-Groq-API-Key"),
+    language: str = Query(None, description="Optional ISO language code")
+):
+    # Check for Groq API key
+    api_key = x_groq_api_key or os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=400, 
+            detail="Groq API Key is missing. Please set it in the editor settings."
+        )
+
+    # Read uploaded file contents into memory
+    file_contents = await file.read()
+    filename = file.filename or "audio.mp3"
+    
+    # We send the file to Groq's transcription endpoint
+    groq_url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    files = {
+        "file": (filename, file_contents, file.content_type or "audio/mpeg")
+    }
+    
+    data = {
+        "model": "whisper-large-v3",
+        "response_format": "verbose_json"
+    }
+    if language:
+        data["language"] = language
+
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                groq_url,
+                headers=headers,
+                files=files,
+                data=data,
+                timeout=45.0  # Allow longer time for speech-to-text
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                try:
+                    err_data = response.json()
+                    detail = err_data.get("error", {}).get("message", response.text)
+                except Exception:
+                    detail = response.text
+                raise HTTPException(status_code=response.status_code, detail=detail)
+                
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == '__main__':
     import uvicorn
