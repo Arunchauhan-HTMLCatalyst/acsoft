@@ -35,6 +35,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             body.style.overflow = '';
         }
+
+        // Toggle Lucide icons
+        const icon = menuToggle.querySelector('i');
+        if (icon) {
+            if (menuToggle.classList.contains('active')) {
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
     }
 
     if (menuToggle && mobileNav) {
@@ -242,25 +255,28 @@ function toggleMute(playerId, button) {
     if (!iframe) return;
     
     // Post message to YouTube IFrame API to mute/unmute
-    if (button.textContent === "Unmute") {
+    if (button.textContent.includes("Unmute")) {
         iframe.contentWindow.postMessage(JSON.stringify({
             "event": "command",
             "func": "unMute",
             "args": []
         }), "*");
-        button.textContent = "Mute";
-        button.style.background = "#32CCC9";
+        button.innerHTML = '<i data-lucide="volume-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Mute';
+        button.style.background = "#22d3ee";
         button.style.color = "#000";
-        button.style.borderColor = "#32CCC9";
+        button.style.borderColor = "#22d3ee";
     } else {
         iframe.contentWindow.postMessage(JSON.stringify({
             "event": "command",
             "func": "mute",
             "args": []
         }), "*");
-        button.textContent = "Unmute";
+        button.innerHTML = '<i data-lucide="volume-x" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Unmute';
         button.style.background = "rgba(0, 0, 0, 0.6)";
         button.style.color = "#fff";
         button.style.borderColor = "rgba(255, 255, 255, 0.15)";
+    }
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
     }
 }

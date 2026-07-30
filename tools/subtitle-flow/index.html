@@ -118,7 +118,7 @@
                 <!-- Left Panel: Style Customizer -->
                 <div class="panel glass" id="stylePanel">
                     <div class="panel-header">
-                        <h2>🎨 Style Subtitles</h2>
+                        <h2><i data-lucide="palette"></i> Style Subtitles</h2>
                     </div>
                     
                     <div class="panel-tabs">
@@ -126,53 +126,53 @@
                         <button class="tab-btn" data-tab="tabCustomize">Customize</button>
                         <button class="tab-btn" data-tab="tabCanvas">Canvas</button>
                     </div>
-
+ 
                     <!-- Tab Content: Templates -->
                     <div class="tab-content" id="tabStyles">
                         <label>Choose Subtitle Style</label>
                         <div class="style-selector-grid">
                             <button class="style-btn active" data-preset="hormozi">
-                                <span class="style-icon">🔥</span>
+                                <span class="style-icon"><i data-lucide="flame"></i></span>
                                 <span class="style-name">Hormozi</span>
                             </button>
                             <button class="style-btn" data-preset="ali_abdaal">
-                                <span class="style-icon">💼</span>
+                                <span class="style-icon"><i data-lucide="book-open"></i></span>
                                 <span class="style-name">Ali Abdaal</span>
                             </button>
                             <button class="style-btn" data-preset="tiktok">
-                                <span class="style-icon">⚡</span>
+                                <span class="style-icon"><i data-lucide="music"></i></span>
                                 <span class="style-name">TikTok</span>
                             </button>
                             <button class="style-btn" data-preset="netflix">
-                                <span class="style-icon">📺</span>
+                                <span class="style-icon"><i data-lucide="tv"></i></span>
                                 <span class="style-name">Netflix</span>
                             </button>
                             <button class="style-btn" data-preset="neon">
-                                <span class="style-icon">🔮</span>
+                                <span class="style-icon"><i data-lucide="sparkles"></i></span>
                                 <span class="style-name">Neon Glow</span>
                             </button>
                             <button class="style-btn" data-preset="gaming">
-                                <span class="style-icon">🎮</span>
+                                <span class="style-icon"><i data-lucide="gamepad-2"></i></span>
                                 <span class="style-name">Gaming</span>
                             </button>
                             <button class="style-btn" data-preset="mrbeast">
-                                <span class="style-icon">🤑</span>
+                                <span class="style-icon"><i data-lucide="dollar-sign"></i></span>
                                 <span class="style-name">MrBeast</span>
                             </button>
                             <button class="style-btn" data-preset="iman_gadzhi">
-                                <span class="style-icon">🕶️</span>
+                                <span class="style-icon"><i data-lucide="glasses"></i></span>
                                 <span class="style-name">Iman Gadzhi</span>
                             </button>
                             <button class="style-btn" data-preset="kalakaar_capsule">
-                                <span class="style-icon">💊</span>
+                                <span class="style-icon"><i data-lucide="box"></i></span>
                                 <span class="style-name">Kalakaar</span>
                             </button>
                             <button class="style-btn" data-preset="instagram_focus">
-                                <span class="style-icon">🎯</span>
+                                <span class="style-icon"><i data-lucide="target"></i></span>
                                 <span class="style-name">IG Focus</span>
                             </button>
                             <button class="style-btn" data-preset="minimalist_bar">
-                                <span class="style-icon">➖</span>
+                                <span class="style-icon"><i data-lucide="minus"></i></span>
                                 <span class="style-name">Min Bar</span>
                             </button>
                         </div>
@@ -437,7 +437,15 @@
     <!-- JSZip Packaging Library (CDN Fallback) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <!-- App Logic Script -->
     <script src="app.js?v=1.25"></script>
+    <script>
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
 </body>
 </html>

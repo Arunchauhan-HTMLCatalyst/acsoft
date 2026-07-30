@@ -1663,10 +1663,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPlayPause.addEventListener('click', () => {
         if (audioPlayer.paused) {
             audioPlayer.play();
-            btnPlayPause.textContent = '⏸️';
+            btnPlayPause.innerHTML = '<i data-lucide="pause"></i>';
         } else {
             audioPlayer.pause();
-            btnPlayPause.textContent = '▶';
+            btnPlayPause.innerHTML = '<i data-lucide="play"></i>';
+        }
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     });
     
@@ -1678,7 +1681,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnMute.addEventListener('click', () => {
         isMuted = !isMuted;
         audioPlayer.muted = isMuted;
-        btnMute.textContent = isMuted ? '🔇' : '🔊';
+        btnMute.innerHTML = isMuted ? '<i data-lucide="volume-x"></i>' : '<i data-lucide="volume-2"></i>';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     });
 
     btnPrevFrame.addEventListener('click', () => {
@@ -1722,7 +1728,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // MediaRecorder recording engine
     function triggerCanvasRecord() {
         audioPlayer.pause();
-        btnPlayPause.textContent = '▶';
+        btnPlayPause.innerHTML = '<i data-lucide="play"></i>';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         audioPlayer.currentTime = 0;
         
         // Enable isRecording flag to route subtitles to canvas
