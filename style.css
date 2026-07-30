@@ -135,18 +135,45 @@ img {
     filter: blur(140px);
     pointer-events: none;
     opacity: 0.7;
+    will-change: transform;
+}
+
+@keyframes floatAmbientLeft {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(80px, 60px) scale(1.1);
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes floatAmbientRight {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(-80px, -60px) scale(0.9);
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
 }
 
 .pt-left {
     background: radial-gradient(circle, rgba(34, 211, 238, 0.14) 0%, rgba(0,0,0,0) 70%);
     top: -10%;
     left: -15%;
+    animation: floatAmbientLeft 25s infinite ease-in-out;
 }
 
 .pt-right {
     background: radial-gradient(circle, rgba(99, 102, 241, 0.14) 0%, rgba(0,0,0,0) 70%);
     bottom: -10%;
     right: -15%;
+    animation: floatAmbientRight 28s infinite ease-in-out;
 }
 
 /* ==========================================================================
@@ -220,8 +247,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary:hover {
-    background: #e4e4e7;
-    transform: translateY(-1px);
+    background: #f4f4f5;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.1);
 }
 
 .btn-secondary {
@@ -232,7 +260,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(34, 211, 238, 0.4);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(34, 211, 238, 0.05);
 }
 
 .btn-outline {
@@ -243,9 +273,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-outline:hover {
     background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(34, 211, 238, 0.4);
     color: #ffffff;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(34, 211, 238, 0.05);
 }
 
 .btn-lg {
@@ -267,8 +298,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-whatsapp:hover {
-    background: #075e54;
-    transform: translateY(-1px);
+    background: #0f7a6e;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(18, 140, 126, 0.2);
 }
 
 /* ==========================================================================
@@ -970,12 +1002,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pricing-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    transform: translateY(-3px);
+    border-color: rgba(34, 211, 238, 0.25);
+    background: var(--color-surface-hover);
+    box-shadow: 0 12px 30px rgba(34, 211, 238, 0.04), var(--glass-shadow);
+    transform: translateY(-4px);
 }
 
 .pricing-card.custom-tier {
-    border-color: rgba(0, 242, 254, 0.2);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.pricing-card.custom-tier:hover {
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.04), var(--glass-shadow);
 }
 
 .pricing-header h4 {
