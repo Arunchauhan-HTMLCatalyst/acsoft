@@ -1221,9 +1221,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 Columns on desktop */
+    grid-template-columns: repeat(4, 1fr); /* 4 Videos per line on desktop */
     gap: 20px;
-    max-width: 720px; /* Constraints the size to make them smaller and neat */
+    max-width: 1000px; /* Constrains the size for 4 portrait cards */
     margin: 0 auto;
 }
 
@@ -1283,7 +1283,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Responsive updates for Video Portfolio Grid */
-@media (max-width: 991px) {
+@media (max-width: 1024px) {
     .video-grid {
         grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
     }
